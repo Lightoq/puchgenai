@@ -1,0 +1,104 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PUCH GEN AI SUITE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+  @keyframes rgb-text {
+    0% { color: #ff0000; text-shadow: 0 0 10px #ff000088; }
+    33% { color: #00ff00; text-shadow: 0 0 10px #00ff0088; }
+    66% { color: #0000ff; text-shadow: 0 0 10px #0000ff88; }
+    100% { color: #ff0000; text-shadow: 0 0 10px #ff000088; }
+  }
+
+  @keyframes rgb-border {
+    0% { border-color: #ff0000; box-shadow: 0 0 15px #ff000044; }
+    33% { border-color: #00ff00; box-shadow: 0 0 15px #00ff0044; }
+    66% { border-color: #0000ff; box-shadow: 0 0 15px #0000ff44; }
+    100% { border-color: #ff0000; box-shadow: 0 0 15px #ff000044; }
+  }
+
+  @keyframes moving-gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .animate-rgb-text {
+    animation: rgb-text 6s infinite linear;
+  }
+
+  .animate-rgb-border {
+    animation: rgb-border 6s infinite linear;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .glass-effect {
+    backdrop-filter: blur(12px);
+    background: rgba(10, 10, 10, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  /* Fix for select options appearance on some browsers */
+  select option {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    padding: 10px;
+  }
+
+  .neon-button {
+    background: linear-gradient(90deg, #ff0000, #00ff00, #0000ff);
+    background-size: 200% 200%;
+    animation: moving-gradient 4s ease infinite;
+    position: relative;
+    z-index: 1;
+    border: none;
+  }
+  
+  .neon-button::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    background: #000;
+    border-radius: inherit;
+    z-index: -1;
+    transition: opacity 0.3s;
+  }
+  
+  .neon-button:hover::after {
+    opacity: 0.8;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: #555; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+</style>
+<script>
+  document.documentElement.classList.add('dark');
+</script>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
+    "@google/genai": "https://esm.sh/@google/genai"
+  }
+}
+</script>
+</head>
+<body class="bg-[#020202] text-gray-200 font-sans antialiased overflow-x-hidden">
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+</body>
+</html>
