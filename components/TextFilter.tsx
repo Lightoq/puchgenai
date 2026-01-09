@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { FileUpload } from './FileUpload';
 
 export const TextFilter: React.FC = () => {
     const [inputText, setInputText] = useState('');
@@ -112,6 +113,14 @@ export const TextFilter: React.FC = () => {
         setOutputText('');
     };
 
+    const handleFileProcessed = (content: string | Array<{ text: string; timestamp: string }>) => {
+        if (typeof content === 'string') {
+            setInputText(content);
+        } else {
+            setInputText(content.map(c => c.text).join('\n'));
+        }
+    };
+
     return (
         <div className="max-w-6xl mx-auto glass-effect p-8 rounded-[40px] animate-rgb-border shadow-2xl relative">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -200,11 +209,14 @@ export const TextFilter: React.FC = () => {
                     <div className="space-y-4">
                         <div className="flex justify-between items-center px-1">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Dữ liệu thô</label>
-                            <span className="text-[9px] text-gray-600 font-mono">{inputText.length} chars</span>
+                            <div className="flex items-center gap-4">
+                                <FileUpload onFileProcessed={handleFileProcessed} />
+                                <span className="text-[9px] text-gray-600 font-mono">{inputText.length} chars</span>
+                            </div>
                         </div>
                         <textarea 
                             value={inputText} onChange={(e) => setInputText(e.target.value)}
-                            placeholder="Dán văn bản truyện, nội dung MXH cần dọn dẹp vào đây..."
+                            placeholder="Dán văn bản truyện, nội dung MXH hoặc tải file (.docx, .txt, .srt)..."
                             className="w-full h-64 bg-black/60 border border-white/10 rounded-[2.5rem] p-8 text-sm text-gray-300 focus:border-amber-500/30 outline-none transition-all resize-none shadow-inner leading-relaxed"
                         />
                     </div>
