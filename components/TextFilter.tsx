@@ -11,6 +11,7 @@ export const TextFilter: React.FC = () => {
         removeJunkBlocks: true,
         removeChapterHeader: true,
         removeEndNumbers: true,
+        convertLargeNumbers: true,
         removeNumbers: false,
         removeWhitespace: true
     });
@@ -19,6 +20,75 @@ export const TextFilter: React.FC = () => {
 
     const handleOptionChange = (key: keyof typeof options) => {
         setOptions(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    // Thuật toán chuyển số sang chữ tiếng Việt thông minh & tự nhiên
+    const numberToVietnamese = (numStr: string): string => {
+        const units = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+        const groups = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ", "tỷ tỷ"];
+
+        let cleanNum = numStr.replace(/\./g, "");
+        if (isNaN(parseInt(cleanNum))) return numStr;
+        if (parseInt(cleanNum) === 0) return "không";
+
+        let pos = cleanNum.length;
+        let chunks: string[] = [];
+        while (pos > 0) {
+            let start = Math.max(0, pos - 3);
+            chunks.push(cleanNum.substring(start, pos).padStart(3, '0'));
+            pos = start;
+        }
+
+        let result = "";
+        let hasStarted = false;
+
+        // Duyệt từ nhóm lớn nhất về nhỏ nhất
+        for (let i = chunks.length - 1; i >= 0; i--) {
+            let n = chunks[i];
+            let v = parseInt(n);
+            
+            // Nếu cả nhóm bằng 0 (ví dụ 000 nghìn), bỏ qua không đọc để tránh "không trăm nghìn"
+            if (v === 0) continue;
+
+            let a = parseInt(n[0]); // Hàng trăm
+            let b = parseInt(n[1]); // Hàng chục
+            let c = parseInt(n[2]); // Hàng đơn vị
+            
+            let chunkText = "";
+
+            // Xử lý hàng Trăm
+            if (hasStarted) {
+                if (a !== 0) {
+                    chunkText += units[a] + " trăm ";
+                } else {
+                    // Nếu hàng trăm là 0 nhưng có số ở hàng chục/đơn vị
+                    if (b !== 0) chunkText += "không trăm ";
+                    else chunkText += "lẻ ";
+                }
+            } else {
+                // Nhóm đầu tiên của số lớn (ví dụ 50 triệu thì "50" là nhóm đầu)
+                if (a !== 0) chunkText += units[a] + " trăm ";
+            }
+
+            // Xử lý hàng Chục
+            if (b !== 0 && b !== 1) {
+                chunkText += units[b] + " mươi ";
+            } else if (b === 1) {
+                chunkText += "mười ";
+            }
+
+            // Xử lý hàng Đơn vị
+            if (c !== 0) {
+                if (c === 1 && b > 1) chunkText += "mốt";
+                else if (c === 5 && b > 0) chunkText += "lăm";
+                else chunkText += units[c];
+            }
+
+            result += chunkText.trim() + " " + groups[i] + " ";
+            hasStarted = true;
+        }
+
+        return result.trim().replace(/\s+/g, ' ');
     };
 
     const processText = () => {
@@ -50,7 +120,6 @@ export const TextFilter: React.FC = () => {
                 
                 if (isCurrentJunk) {
                     let nextJunkIdx = -1;
-                    // Kiểm tra 6 dòng tiếp theo để xem có phải khối rác không
                     for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
                         let nextLineLower = lines[j].trim().toLowerCase();
                         if (nextLineLower === "") continue; 
@@ -61,7 +130,6 @@ export const TextFilter: React.FC = () => {
                     }
 
                     if (nextJunkIdx !== -1) {
-                        // Nhảy qua toàn bộ khối rác
                         while (i < lines.length) {
                             let checkLine = lines[i].trim().toLowerCase();
                             if (checkLine === "" || keywords.some(k => checkLine === k || checkLine.includes(k))) {
@@ -86,12 +154,21 @@ export const TextFilter: React.FC = () => {
 
         let result = finalLines.join('\n');
         
-        // Loại bỏ TẤT CẢ số
+        // 4. Chuyển đổi số lớn sang chữ (Tự động hóa hoàn toàn)
+        if (options.convertLargeNumbers) {
+            // Tìm các số có từ 4 chữ số trở lên hoặc định dạng có dấu chấm phân cách
+            const numberRegex = /\d{1,3}(?:\.\d{3})+|\d{4,}/g;
+            result = result.replace(numberRegex, (match) => {
+                return numberToVietnamese(match);
+            });
+        }
+
+        // Loại bỏ TẤT CẢ số còn lại nếu option được bật
         if (options.removeNumbers) {
             result = result.replace(/[0-9]/g, '');
         }
         
-        // Xóa khoảng trắng thừa và dòng trống
+        // Dọn dẹp văn bản
         if (options.removeWhitespace) {
             result = result.replace(/[^\S\r\n]+/g, ' ') 
                            .replace(/^\s*[\r\n]/gm, '') 
@@ -163,6 +240,15 @@ export const TextFilter: React.FC = () => {
                                 className="w-4 h-4 rounded border-white/10 bg-black text-red-500 focus:ring-red-500"
                             />
                             <span className="text-[11px] font-bold text-red-100/80 uppercase">Xóa số lẻ cuối dòng</span>
+                        </label>
+
+                        <label className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all border border-transparent hover:border-green-500/20">
+                            <input 
+                                type="checkbox" checked={options.convertLargeNumbers} 
+                                onChange={() => handleOptionChange('convertLargeNumbers')}
+                                className="w-4 h-4 rounded border-white/10 bg-black text-green-500 focus:ring-green-500"
+                            />
+                            <span className="text-[11px] font-bold text-green-100/80 uppercase">Đọc số: Nghìn/Triệu/Tỷ...</span>
                         </label>
 
                         <hr className="border-white/5 my-2" />
