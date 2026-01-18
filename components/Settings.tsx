@@ -34,7 +34,7 @@ export const Settings: React.FC = () => {
                         <ul className="text-[11px] text-gray-500 space-y-4 font-bold uppercase tracking-tighter leading-relaxed">
                             <li className="flex items-center gap-3"><span className="h-1.5 w-1.5 rounded-full bg-orange-500"></span> <span className="text-gray-300">CORE-L01:</span> Audio Transmission (TTS)</li>
                             <li className="flex items-center gap-3"><span className="h-1.5 w-1.5 rounded-full bg-orange-500"></span> <span className="text-gray-300">CORE-L02:</span> Vision Graphics (Photo/Video)</li>
-                            <li className="flex items-center gap-3"><span className="h-1.5 w-1.5 rounded-full bg-orange-500 opacity-30"></span> <span className="text-gray-600">AUX-POOL:</span> Failover Redundancy (Row 3+)</li>
+                            <li className="flex items-center gap-3"><span className="h-1.5 w-1.5 rounded-full bg-orange-500 opacity-30"></span> <span className="text-gray-600">AUX-POOL:</span> Translate & Transcription (Row 3+)</li>
                         </ul>
                     </div>
                     
@@ -55,7 +55,7 @@ export const Settings: React.FC = () => {
                     <div className="absolute -inset-1 bg-gradient-to-r from-orange-500/20 to-transparent rounded-[3rem] blur opacity-0 group-hover:opacity-100 transition duration-1000"></div>
                     <textarea
                         value={keysInput} onChange={(e) => setKeysInput(e.target.value)}
-                        placeholder="Row 1: TTS Engine&#10;Row 2: Vision Graphics (Image/Video)&#10;Row 3+: Safety Pools..."
+                        placeholder="Row 1: TTS Engine&#10;Row 2: Vision Graphics (Image/Video)&#10;Row 3+: Translate, Transcribe & Safety Pools..."
                         className="relative w-full h-96 bg-black/80 border border-white/10 rounded-[2.5rem] p-10 font-mono text-[11px] text-green-400 placeholder-gray-800 focus:border-orange-500/50 outline-none transition-all shadow-[inset_0_2px_20px_rgba(0,0,0,0.8)] leading-loose scrollbar-hide"
                     />
                 </div>
