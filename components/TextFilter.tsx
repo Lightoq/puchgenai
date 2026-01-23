@@ -12,7 +12,7 @@ export const TextFilter: React.FC = () => {
     const [inputText, setInputText] = useState('');
     const [outputText, setOutputText] = useState('');
     // Cập nhật junkKeywords với các từ khóa mới người dùng yêu cầu
-    const [junkKeywords, setJunkKeywords] = useState('comment, 0 comment, Vote, SEND GIFT, bình luận, 0 bình luận, bỏ phiếu, gửi quà tặng, gửI quà tặng, P@treon, PinkSnake, chương phía trước, vui lòng theo dõi tôi, p@treon.com/PinkSnake, nhận xét, còn lại, SUY NGHĨ CỦA NGƯỜI SÁNG TẠO, Rắn hồng, discord.gg, https://discord.gg/7mNvAaTtkf');
+    const [junkKeywords, setJunkKeywords] = useState('comment, 0 comment, Vote, SEND GIFT, bình luận, 0 bình luận, bỏ phiếu, gửi quà tặng, gửI quà tặng, P@treon, PinkSnake, chương phía trước, vui lòng theo dõi tôi, p@treon.com/PinkSnake, nhận xét, còn lại, SUY NGHĨ CỦA NGƯỜI SÁNG TẠO, Rắn hồng, discord.gg, https://discord.gg/7mNvAaTtkf, Power Stones, Đánh giá, Bonus');
     
     const [phoneticDict, setPhoneticDict] = useState<PhoneticEntry[]>([]);
     const [newOriginal, setNewOriginal] = useState('');
@@ -133,12 +133,16 @@ export const TextFilter: React.FC = () => {
         const dynamicJunkPatterns = [
             /^\d+\s+nhận\s+xét$/i,
             /^\d+\s+còn\s+lại$/i,
-            /^\d+\s+left$/i, // Thêm pattern "[số] left"
+            /^\d+\s+left$/i,
             /^bỏ\s+phiếu$/i,
             /^\d+\s+bình\s+luận$/i,
+            /^bình\s+luận$/i, // Dòng chỉ chứa "Bình luận"
             /^suy\s+nghĩ\s+của\s+người\s+sáng\s+tạo$/i,
             /^rắn\s+hồng$/i,
-            /discord\.gg\/\w+/i // Thêm pattern nhận diện link discord chung
+            /discord\.gg\/\w+/i,
+            /\d+\s+power\s+stones\s*=\s*\d+\s+chương\s+bônus/i, // Lọc Power Stones Bonus
+            /\d+\s+đánh\s+giá\s*=\s*\d+\s+chương\s+bônus/i,   // Lọc Đánh giá Bonus
+            /\d+\s+stones\s*=\s*\d+\s+bonus/i                  // Biến thể ngắn
         ];
 
         while (i < lines.length) {
@@ -170,7 +174,6 @@ export const TextFilter: React.FC = () => {
                 let isCurrentJunk = keywords.some(k => lineLower.includes(k));
                 if (isCurrentJunk) {
                     let nextJunkIdx = -1;
-                    // Kiểm tra xem có rác liên tiếp trong phạm vi 5 dòng không
                     for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
                         let nextLineTrimmed = lines[j].trim();
                         let nextLineLower = nextLineTrimmed.toLowerCase();
@@ -182,8 +185,7 @@ export const TextFilter: React.FC = () => {
                         }
                     }
 
-                    if (nextJunkIdx !== -1 || lineLower.includes('discord.gg') || lineLower.includes('send gift') || lineLower.includes('left')) {
-                        // Nếu là rác liên tiếp hoặc chứa từ khóa rác mạnh, bỏ qua toàn bộ khối này
+                    if (nextJunkIdx !== -1 || lineLower.includes('discord.gg') || lineLower.includes('send gift') || lineLower.includes('left') || lineLower.includes('power stones')) {
                         while (i < lines.length) {
                             let checkLineTrimmed = lines[i].trim();
                             let checkLineLower = checkLineTrimmed.toLowerCase();
