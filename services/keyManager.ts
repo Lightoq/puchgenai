@@ -1,5 +1,5 @@
 
-export type TaskType = 'tts' | 'image_video' | 'translate';
+export type TaskType = 'tts' | 'translate' | 'image_video';
 
 class KeyManager {
     private STORAGE_KEY = 'puch_manual_api_keys';
@@ -24,12 +24,11 @@ class KeyManager {
     /**
      * Get API key based on task type.
      * Row 1: tts
-     * Row 2: image_video
-     * Row 3: translate
+     * Row 2: processing/translate/image/video
      */
     public getKey(task: TaskType): string {
-        // Favor process.env.API_KEY for Gemini tasks (image_video and translate) to align with exclusive usage guidelines.
-        if ((task === 'image_video' || task === 'translate') && process.env.API_KEY) {
+        // Favor process.env.API_KEY for Gemini tasks (translate, image, video)
+        if ((task === 'translate' || task === 'image_video') && process.env.API_KEY) {
             return process.env.API_KEY;
         }
 
@@ -38,16 +37,15 @@ class KeyManager {
 
         // Chọn key chính theo dòng
         if (task === 'tts') primaryKey = keys[0] || '';
-        else if (task === 'image_video') primaryKey = keys[1] || '';
-        else if (task === 'translate') primaryKey = keys[2] || '';
+        else if (task === 'translate' || task === 'image_video') primaryKey = keys[1] || '';
 
         // Nếu key chính hoạt động và chưa bị đánh dấu lỗi
         if (primaryKey && !this.badKeys.has(primaryKey)) {
             return primaryKey;
         }
 
-        // Nếu không có key chính hoặc key chính lỗi, dùng pool dự phòng (dòng 3/4 trở đi tùy task)
-        const fallbackStartIndex = task === 'translate' ? 3 : 2;
+        // Dự phòng
+        const fallbackStartIndex = (task === 'translate' || task === 'image_video') ? 2 : 1;
         const fallbackPool = keys.slice(fallbackStartIndex);
         for (const fbKey of fallbackPool) {
             if (!this.badKeys.has(fbKey)) {
@@ -55,7 +53,6 @@ class KeyManager {
             }
         }
 
-        // Cuối cùng, nếu không còn key nào, thử dùng key hệ thống
         return process.env.API_KEY || primaryKey || (keys[0] || '');
     }
 

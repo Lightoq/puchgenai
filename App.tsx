@@ -1,10 +1,8 @@
 
 import React, { useState } from 'react';
 import { Logo } from './components/Logo';
-import { ImageGenerator } from './components/ImageGenerator';
 import { Settings } from './components/Settings';
 import { TextToSpeech } from './components/TextToSpeech';
-import { VideoGenerator } from './components/VideoGenerator';
 import { TextFilter } from './components/TextFilter';
 
 const TabButton: React.FC<{ 
@@ -40,7 +38,7 @@ const TabButton: React.FC<{
 };
 
 const App: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'tts' | 'image' | 'video' | 'filter' | 'settings'>('tts');
+    const [activeTab, setActiveTab] = useState<'tts' | 'filter' | 'settings'>('tts');
     
     return (
         <div className="min-h-screen flex flex-col bg-[#020202]">
@@ -59,20 +57,6 @@ const App: React.FC = () => {
                             onClick={() => setActiveTab('tts')} 
                             activeColorClass="text-teal-400 bg-teal-500/10"
                             icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>}
-                        />
-                        <TabButton 
-                            name="Ảnh AI" 
-                            active={activeTab === 'image'} 
-                            onClick={() => setActiveTab('image')} 
-                            activeColorClass="text-purple-400 bg-purple-500/10"
-                            icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>}
-                        />
-                        <TabButton 
-                            name="Video AI" 
-                            active={activeTab === 'video'} 
-                            onClick={() => setActiveTab('video')} 
-                            activeColorClass="text-blue-400 bg-blue-500/10"
-                            icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2-2v8a2 2 0 002 2z"></path></svg>}
                         />
                         <TabButton 
                             name="Lọc Chữ" 
@@ -95,8 +79,6 @@ const App: React.FC = () => {
 
             <main className="flex-grow container mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
                  {activeTab === 'tts' && <TextToSpeech />}
-                 {activeTab === 'image' && <ImageGenerator />}
-                 {activeTab === 'video' && <VideoGenerator />}
                  {activeTab === 'filter' && <TextFilter />}
                  {activeTab === 'settings' && <Settings />}
             </main>
