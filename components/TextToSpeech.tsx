@@ -18,7 +18,6 @@ export const TextToSpeech: React.FC = () => {
     const [minCharsToMerge, setMinCharsToMerge] = useState(30);
     const [concurrentThreads, setConcurrentThreads] = useState(3);
     const [requestDelay, setRequestDelay] = useState(500);
-    const [speed, setSpeed] = useState(1.0);
     const [mergedAudioUrl, setMergedAudioUrl] = useState<string | null>(null);
     const [shouldProcess, setShouldProcess] = useState(false);
     
@@ -155,7 +154,6 @@ export const TextToSpeech: React.FC = () => {
                     speaker,
                     token,
                     appkey: APP_KEY,
-                    speed,
                 });
                 if (!signal.aborted) {
                     updateChunk(chunk.id, { status: 'finished', audioUrl });
@@ -192,7 +190,7 @@ export const TextToSpeech: React.FC = () => {
             setProcessingState('idle');
         }
 
-    }, [chunks, speaker, concurrentThreads, requestDelay, speed]);
+    }, [chunks, speaker, concurrentThreads, requestDelay]);
 
     useEffect(() => {
         if (shouldProcess) {
@@ -224,7 +222,7 @@ export const TextToSpeech: React.FC = () => {
     };
 
     const handleDownloadSrt = () => {
-        const srtContent = TextProcessor.generateSrt(chunks, speed);
+        const srtContent = TextProcessor.generateSrt(chunks);
         const blob = new Blob([srtContent], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -264,8 +262,6 @@ export const TextToSpeech: React.FC = () => {
                 setConcurrentThreads={setConcurrentThreads}
                 requestDelay={requestDelay}
                 setRequestDelay={setRequestDelay}
-                speed={speed}
-                setSpeed={setSpeed}
             />
             <ResultsPanel
                 chunks={chunks}
@@ -275,7 +271,6 @@ export const TextToSpeech: React.FC = () => {
                 removeChunk={removeChunk}
                 onClearQueue={clearQueue}
                 onDownloadAll={handleDownloadAll}
-                onDownloadSrt={handleDownloadSrt}
                 onRetryChunk={retryChunk}
                 onRetryAllFailed={retryAllFailed}
                 successfulChunksCount={successfulChunksCount}

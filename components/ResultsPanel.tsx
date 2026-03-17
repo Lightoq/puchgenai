@@ -2,6 +2,7 @@
 import React from 'react';
 import type { ChunkJob, ProcessingState } from '../types';
 import { ChunkCard } from './ChunkCard';
+import { AudioPostProcessor } from './AudioPostProcessor';
 
 interface ResultsPanelProps {
     chunks: ChunkJob[];
@@ -11,7 +12,6 @@ interface ResultsPanelProps {
     removeChunk: (chunkId: string) => void;
     onClearQueue: () => void;
     onDownloadAll: () => void;
-    onDownloadSrt: () => void;
     onRetryChunk: (chunkId: string) => void;
     onRetryAllFailed: () => void;
     successfulChunksCount: number;
@@ -21,7 +21,7 @@ interface ResultsPanelProps {
 }
 
 export const ResultsPanel: React.FC<ResultsPanelProps> = ({ 
-    chunks, processingState, mergedAudioUrl, onCancel, removeChunk, onClearQueue, onDownloadAll, onDownloadSrt,
+    chunks, processingState, mergedAudioUrl, onCancel, removeChunk, onClearQueue, onDownloadAll,
     onRetryChunk, onRetryAllFailed, successfulChunksCount, failedChunksCount, remainingChunksCount, totalChunksCount
 }) => {
     
@@ -85,19 +85,14 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
                         <div className="flex gap-4">
                             <button
                                 onClick={onDownloadAll}
-                                className="flex-1 flex items-center justify-center gap-3 py-4.5 px-4 rounded-2xl text-[10px] font-black text-white bg-teal-600 hover:bg-teal-500 shadow-[0_10px_20px_-5px_rgba(20,184,166,0.3)] transition-all active:scale-[0.97] uppercase tracking-widest"
+                                className="w-full flex items-center justify-center gap-3 py-4.5 px-4 rounded-2xl text-[10px] font-black text-white bg-teal-600 hover:bg-teal-500 shadow-[0_10px_20px_-5px_rgba(20,184,166,0.3)] transition-all active:scale-[0.97] uppercase tracking-widest"
                             >
                                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                 Tải Audio
                             </button>
-                            <button
-                                onClick={onDownloadSrt}
-                                className="flex-1 flex items-center justify-center gap-3 py-4.5 px-4 rounded-2xl text-[10px] font-black text-white bg-indigo-600 hover:bg-indigo-500 shadow-[0_10px_20px_-5px_rgba(79,70,229,0.3)] transition-all active:scale-[0.97] uppercase tracking-widest"
-                            >
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
-                                Tải Phụ Đề
-                            </button>
                         </div>
+
+                        <AudioPostProcessor audioUrl={mergedAudioUrl} />
                     </div>
                 </div>
             )}

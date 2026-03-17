@@ -191,7 +191,7 @@ export class TextProcessor {
         });
     }
 
-    public static generateSrt(chunks: any[], speed: number = 1.0): string {
+    public static generateSrt(chunks: any[]): string {
         const formatTime = (seconds: number): string => {
             const date = new Date(0);
             date.setSeconds(seconds);
@@ -210,8 +210,8 @@ export class TextProcessor {
                 
                 // Nếu không có timestamp (văn bản thô), ước tính dựa trên độ dài
                 if (!timestamp) {
-                    // Ước tính 18 ký tự mỗi giây, điều chỉnh theo speed
-                    const estimatedDuration = (chunk.text.length / (18 * speed));
+                    // Ước tính 18 ký tự mỗi giây
+                    const estimatedDuration = (chunk.text.length / 18);
                     const start = formatTime(currentTime);
                     const end = formatTime(currentTime + estimatedDuration);
                     timestamp = `${start} --> ${end}`;

@@ -21,18 +21,13 @@ interface ConfigurationProps {
     setConcurrentThreads: (value: number) => void;
     requestDelay: number;
     setRequestDelay: (value: number) => void;
-    speed: number;
-    setSpeed: (value: number) => void;
 }
-
-const SPEED_PRESETS = [0.8, 1.0, 1.2, 1.5, 2.0];
 
 export const Configuration: React.FC<ConfigurationProps> = ({
     speaker, setSpeaker, selectedCountry, onCountryChange, speakerGroups, isProcessing,
     onProcessQueue, onAddContent, pendingChunksCount,
     maxChars, setMaxChars, minCharsToMerge, setMinCharsToMerge,
-    concurrentThreads, setConcurrentThreads, requestDelay, setRequestDelay,
-    speed, setSpeed
+    concurrentThreads, setConcurrentThreads, requestDelay, setRequestDelay
 }) => {
     const [textToAdd, setTextToAdd] = useState('');
     const [showAdvanced, setShowAdvanced] = useState(false);
@@ -95,30 +90,6 @@ export const Configuration: React.FC<ConfigurationProps> = ({
                                 <option key={spk.id} value={spk.id} className="bg-black text-white">{spk.name}</option>
                             ))}
                         </select>
-                    </div>
-                </div>
-
-                <div className="bg-black/40 p-5 rounded-2xl border border-white/5 space-y-4 shadow-inner">
-                    <div className="flex items-center justify-between">
-                        <label className="text-xs font-black text-white flex items-center gap-2 uppercase tracking-tighter">
-                            <span className="text-teal-500 text-[8px]">●</span> Tốc độ: <span className="text-teal-400 font-mono text-sm">{speed.toFixed(1)}x</span>
-                        </label>
-                    </div>
-                    <input 
-                        type="range" min="0.5" max="2.0" step="0.1" 
-                        value={speed} onChange={e => setSpeed(parseFloat(e.target.value))}
-                        className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-teal-500"
-                    />
-                    <div className="flex flex-wrap gap-2">
-                        {SPEED_PRESETS.map(val => (
-                            <button
-                                key={val}
-                                onClick={() => setSpeed(val)}
-                                className={`px-3 py-1.5 text-[10px] font-black rounded-xl transition-all ${speed === val ? 'bg-teal-500 text-black shadow-[0_0_15px_rgba(20,184,166,0.4)]' : 'bg-gray-900 text-white/40 hover:text-white'}`}
-                            >
-                                {val}x
-                            </button>
-                        ))}
                     </div>
                 </div>
 

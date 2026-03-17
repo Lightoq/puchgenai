@@ -12,7 +12,7 @@ export const TextFilter: React.FC = () => {
     const [inputText, setInputText] = useState('');
     const [outputText, setOutputText] = useState('');
     // Cập nhật junkKeywords với các từ khóa mới người dùng yêu cầu
-    const [junkKeywords, setJunkKeywords] = useState('comment, 0 comment, Vote, SEND GIFT, bình luận, 0 bình luận, bỏ phiếu, gửi quà tặng, gửI quà tặng, P@treon, PinkSnake, chương phía trước, vui lòng theo dõi tôi, p@treon.com/PinkSnake, nhận xét, còn lại, SUY NGHĨ CỦA NGƯỜI SÁNG TẠO, Rắn hồng, discord.gg, https://discord.gg/7mNvAaTtkf, Power Stones, Đánh giá, Bonus');
+    const [junkKeywords, setJunkKeywords] = useState('comment, 0 comment, Vote, SEND GIFT, bình luận, 0 bình luận, bỏ phiếu, gửi quà tặng, gửI quà tặng, P@treon, PinkSnake, chương phía trước, vui lòng theo dõi tôi, p@treon.com/PinkSnake, nhận xét, còn lại, SUY NGHĨ CỦA NGƯỜI SÁNG TẠO, Rắn hồng, discord.gg, https://discord.gg/7mNvAaTtkf, Power Stones, Đánh giá, Bonus, 1 left, 2 left, 3 left, 4 left, 5 left, 6 left, 7 left, 8 left, 9 left, discord.com/invite');
     
     const [phoneticDict, setPhoneticDict] = useState<PhoneticEntry[]>([]);
     const [newOriginal, setNewOriginal] = useState('');
@@ -136,13 +136,15 @@ export const TextFilter: React.FC = () => {
             /^\d+\s+left$/i,
             /^bỏ\s+phiếu$/i,
             /^\d+\s+bình\s+luận$/i,
-            /^bình\s+luận$/i, // Dòng chỉ chứa "Bình luận"
+            /^bình\s+luận$/i, 
+            /^thêm\s+bình\s+luận$/i,
+            /^\d+\s+comment(s)?$/i,
             /^suy\s+nghĩ\s+của\s+người\s+sáng\s+tạo$/i,
             /^rắn\s+hồng$/i,
-            /discord\.gg\/\w+/i,
-            /\d+\s+power\s+stones\s*=\s*\d+\s+chương\s+bônus/i, // Lọc Power Stones Bonus
-            /\d+\s+đánh\s+giá\s*=\s*\d+\s+chương\s+bônus/i,   // Lọc Đánh giá Bonus
-            /\d+\s+stones\s*=\s*\d+\s+bonus/i                  // Biến thể ngắn
+            /(?:https?:\/\/)?discord\.(?:gg|com\/invite)\/\S+/i,
+            /\d+\s+power\s+stones\s*=\s*\d+\s+chương\s+bônus/i, 
+            /\d+\s+đánh\s+giá\s*=\s*\d+\s+chương\s+bônus/i,   
+            /\d+\s+stones\s*=\s*\d+\s+bonus/i                  
         ];
 
         while (i < lines.length) {

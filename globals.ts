@@ -7,6 +7,12 @@ interface Mammoth {
 
 declare global {
   const mammoth: Mammoth;
+  interface Window {
+    aistudio: {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    };
+  }
 }
 
 // Export something to make it a module

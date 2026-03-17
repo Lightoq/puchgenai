@@ -5,7 +5,6 @@ interface SynthesizeOptions {
     speaker: string;
     token: string;
     appkey: string;
-    speed: number;
 }
 
 // Helper to decode base64 string to Uint8Array for browser environment
@@ -59,7 +58,6 @@ export const synthesizeChunk = (options: SynthesizeOptions): Promise<string> => 
             const payload = {
                 text: options.text,
                 speaker: options.speaker,
-                speed: options.speed,
                 audio_config: {
                     bit_rate: 64000,
                     sample_rate: 24000,
