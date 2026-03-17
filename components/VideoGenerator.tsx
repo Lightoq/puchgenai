@@ -83,7 +83,7 @@ export const VideoGenerator: React.FC = () => {
                 setHasApiKey(false);
                 setError("Dự án chưa bật Billing hoặc API Key không hợp lệ. Vui lòng chọn lại.");
             } else {
-                setError(e.message); 
+                setError(e?.message || String(e) || 'Lỗi không xác định'); 
             }
         } finally { 
             setIsGenerating(false); 

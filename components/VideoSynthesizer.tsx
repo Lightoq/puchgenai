@@ -56,6 +56,11 @@ export const VideoSynthesizer: React.FC = () => {
         
         try {
             const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+            
+            ffmpegInstance.on('log', ({ message }) => {
+                console.log('FFmpeg Log:', message);
+            });
+
             await ffmpegInstance.load({
                 coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
                 wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
@@ -166,10 +171,11 @@ export const VideoSynthesizer: React.FC = () => {
             if (filterComplex) {
                 args.push('-filter_complex', filterComplex);
                 args.push('-map', videoStream.replace(/\[|\]/g, ''));
-                args.push('-map', audioStream.replace(/\[|\]/g, ''));
+                const aMap = audioStream.replace(/\[|\]/g, '');
+                args.push('-map', audioStream === '[0:a]' ? `${aMap}?` : aMap);
             } else {
                 // If no filters, map default streams
-                args.push('-map', '0:v', '-map', '0:a');
+                args.push('-map', '0:v', '-map', '0:a?');
             }
 
             if (quickPreview) {
@@ -182,7 +188,11 @@ export const VideoSynthesizer: React.FC = () => {
             args.push('-c:a', 'aac');
             args.push('output.mp4');
 
-            await ffmpeg.exec(args);
+            const exitCode = await ffmpeg.exec(args);
+            
+            if (exitCode !== 0) {
+                throw new Error(`FFmpeg failed with exit code ${exitCode}. Check console for details.`);
+            }
 
             const data = await ffmpeg.readFile('output.mp4');
             const url = URL.createObjectURL(new Blob([(data as any).buffer], { type: 'video/mp4' }));
@@ -190,7 +200,8 @@ export const VideoSynthesizer: React.FC = () => {
             setStatus(quickPreview ? 'Đã tạo bản xem thử' : 'Hoàn tất');
         } catch (err: any) {
             console.error('Processing error:', err);
-            setError('Lỗi xử lý: ' + err.message);
+            const errorMessage = err?.message || (typeof err === 'string' ? err : 'Lỗi không xác định');
+            setError('Lỗi xử lý: ' + errorMessage);
             setStatus('Lỗi');
         } finally {
             setIsProcessing(false);
@@ -410,9 +421,12 @@ export const VideoSynthesizer: React.FC = () => {
             )}
 
             {error && (
-                <div className="fixed bottom-8 right-8 max-w-sm p-4 bg-red-500/90 backdrop-blur-xl border border-red-400/20 rounded-2xl flex items-center gap-3 text-white text-xs font-bold shadow-2xl animate-in fade-in slide-in-from-right-4">
+                <div className="fixed bottom-8 right-8 max-w-sm p-4 bg-red-500/90 backdrop-blur-xl border border-red-400/20 rounded-2xl flex items-center gap-3 text-white text-xs font-bold shadow-2xl animate-in fade-in slide-in-from-right-4 z-[100]">
                     <AlertCircle className="w-5 h-5 shrink-0" />
-                    {error}
+                    <div className="flex-grow">{error}</div>
+                    <button onClick={() => setError(null)} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                 </div>
             )}
         </div>
