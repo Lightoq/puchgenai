@@ -12,7 +12,7 @@ export const AudioToSubtitles: React.FC = () => {
     const [file, setFile] = useState<File | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isModelLoading, setIsModelLoading] = useState(false);
-    const [modelProgress, setModelProgress] = useState(0);
+    const [loadingFiles, setLoadingFiles] = useState<Record<string, { progress: number, status: string }>>({});
     const [subtitles, setSubtitles] = useState<SubtitleLine[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
@@ -25,11 +25,18 @@ export const AudioToSubtitles: React.FC = () => {
         if (transcriberRef.current) return transcriberRef.current;
         
         setIsModelLoading(true);
+        setLoadingFiles({});
         try {
             const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
                 progress_callback: (data: any) => {
-                    if (data.status === 'progress') {
-                        setModelProgress(data.progress);
+                    if (data.status === 'progress' || data.status === 'download' || data.status === 'initiate' || data.status === 'done') {
+                        setLoadingFiles(prev => ({
+                            ...prev,
+                            [data.file]: {
+                                progress: data.progress || (data.status === 'done' ? 100 : 0),
+                                status: data.status
+                            }
+                        }));
                     }
                 }
             });
@@ -225,19 +232,38 @@ export const AudioToSubtitles: React.FC = () => {
                         </div>
                     </div>
 
-                    {isModelLoading && (
-                        <div className="mt-8 space-y-3 animate-in fade-in duration-500">
-                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-indigo-400">
-                                <span>Đang tải mô hình AI (Whisper)...</span>
-                                <span>{Math.round(modelProgress)}%</span>
+                    {isModelLoading && Object.keys(loadingFiles).length > 0 && (
+                        <div className="mt-8 space-y-4 animate-in fade-in duration-500">
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                <span>Đang chuẩn bị mô hình AI (Whisper Tiny)...</span>
                             </div>
-                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                <div 
-                                    className="h-full bg-indigo-500 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
-                                    style={{ width: `${modelProgress}%` }}
-                                ></div>
+                            
+                            <div className="space-y-3 max-h-40 overflow-y-auto pr-2 no-scrollbar">
+                                {Object.keys(loadingFiles).map((filename) => {
+                                    const info = loadingFiles[filename];
+                                    return (
+                                        <div key={filename} className="space-y-1.5">
+                                            <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-wider text-gray-500">
+                                                <span className="truncate max-w-[200px]">{filename}</span>
+                                                <span className={info.status === 'done' ? 'text-teal-500' : 'text-indigo-400'}>
+                                                    {info.status === 'done' ? 'Hoàn tất' : `${Math.round(info.progress)}%`}
+                                                </span>
+                                            </div>
+                                            <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                                <div 
+                                                    className={`h-full transition-all duration-300 ${info.status === 'done' ? 'bg-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.5)]' : 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]'}`}
+                                                    style={{ width: `${info.progress}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                            <p className="text-[9px] text-gray-600 italic">Lần đầu tải sẽ mất chút thời gian (khoảng 75MB). Các lần sau sẽ nhanh hơn.</p>
+                            
+                            <p className="text-[9px] text-gray-600 italic mt-2">
+                                Lần đầu tải sẽ mất chút thời gian (khoảng 75MB). Các lần sau sẽ được lấy từ bộ nhớ đệm trình duyệt.
+                            </p>
                         </div>
                     )}
 
