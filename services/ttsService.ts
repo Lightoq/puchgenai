@@ -27,13 +27,11 @@ class TTSError extends Error {
 }
 
 export const synthesizeChunk = (options: SynthesizeOptions): Promise<string> => {
-    console.log(`[CapCut] Starting synthesis for: "${options.text.substring(0, 20)}..."`);
     return new Promise((resolve, reject) => {
         const ws = new WebSocket(WSS_URL);
         const audioChunks: Uint8Array[] = [];
         let isSettled = false;
         let timeoutId: number;
-        let lastMessageTime = Date.now();
 
         const cleanup = () => {
             if (timeoutId) {
@@ -52,25 +50,11 @@ export const synthesizeChunk = (options: SynthesizeOptions): Promise<string> => 
             }
         };
 
-        // Activity check interval
-        const activityCheckId = window.setInterval(() => {
-            if (isSettled) {
-                clearInterval(activityCheckId);
-                return;
-            }
-            if (Date.now() - lastMessageTime > 20000) { // 20s no activity
-                settle(reject, new TTSError("Không nhận được phản hồi từ máy chủ CapCut quá 20 giây."));
-                clearInterval(activityCheckId);
-            }
-        }, 5000);
-
         timeoutId = window.setTimeout(() => {
             settle(reject, new TTSError("Tổng hợp TTS đã hết thời gian sau 1 phút."));
         }, 60000);
 
         ws.onopen = () => {
-            console.log("[CapCut] WebSocket opened.");
-            lastMessageTime = Date.now();
             const payload = {
                 text: options.text,
                 speaker: options.speaker,
@@ -94,12 +78,10 @@ export const synthesizeChunk = (options: SynthesizeOptions): Promise<string> => 
         };
 
         ws.onmessage = async (event: MessageEvent) => {
-            lastMessageTime = Date.now();
             if (isSettled) return;
 
             // Handle binary audio data directly
             if (event.data instanceof Blob) {
-                console.log(`[CapCut] Received binary chunk: ${event.data.size} bytes`);
                 const arrayBuffer = await event.data.arrayBuffer();
                 audioChunks.push(new Uint8Array(arrayBuffer));
                 return;
@@ -111,7 +93,6 @@ export const synthesizeChunk = (options: SynthesizeOptions): Promise<string> => 
                     const data = JSON.parse(event.data);
                     const eventType = data.event;
                     const payload = data.payload;
-                    console.log(`[CapCut] Received event: ${eventType}`);
 
                     // Case 1: Direct URL received. This is a final success state.
                     if (payload && typeof payload === "object" && payload.audio_url) {
@@ -160,7 +141,6 @@ export const synthesizeChunk = (options: SynthesizeOptions): Promise<string> => 
         };
 
         ws.onclose = (closeEvent: CloseEvent) => {
-            console.log(`[CapCut] WebSocket closed. Code: ${closeEvent.code}, Reason: ${closeEvent.reason}`);
             // This is the final step. If we haven't settled yet, we resolve or reject based on the received chunks.
              if (!isSettled) {
                 if (audioChunks.length > 0) {
