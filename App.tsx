@@ -5,7 +5,6 @@ import { Settings } from './components/Settings';
 import { TextToSpeech } from './components/TextToSpeech';
 import { TextFilter } from './components/TextFilter';
 import { AudioToSubtitles } from './components/AudioToSubtitles';
-import { VideoSynthesizer } from './components/VideoSynthesizer';
 
 const TabButton: React.FC<{ 
     name: string; 
@@ -40,7 +39,7 @@ const TabButton: React.FC<{
 };
 
 const App: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'tts' | 'filter' | 'transcribe' | 'video' | 'settings'>('tts');
+    const [activeTab, setActiveTab] = useState<'tts' | 'filter' | 'transcribe' | 'settings'>('tts');
     
     return (
         <div className="min-h-screen flex flex-col bg-[#020202]">
@@ -74,13 +73,6 @@ const App: React.FC = () => {
                             activeColorClass="text-indigo-400 bg-indigo-500/10"
                             icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>}
                         />
-                        <TabButton 
-                            name="Lồng Video" 
-                            active={activeTab === 'video'} 
-                            onClick={() => setActiveTab('video')} 
-                            activeColorClass="text-red-400 bg-red-500/10"
-                            icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>}
-                        />
                         <div className="flex-grow"></div>
                         <TabButton 
                             name="Cấu hình" 
@@ -97,7 +89,6 @@ const App: React.FC = () => {
                  {activeTab === 'tts' && <TextToSpeech />}
                  {activeTab === 'filter' && <TextFilter />}
                  {activeTab === 'transcribe' && <AudioToSubtitles />}
-                 {activeTab === 'video' && <VideoSynthesizer />}
                  {activeTab === 'settings' && <Settings />}
             </main>
 

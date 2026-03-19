@@ -1,9 +1,10 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import type { ChunkJob, ProcessingState } from '../types';
-import { APP_KEY, SPEAKER_GROUPS } from '../constants';
+import { APP_KEY, SPEAKER_GROUPS, SOUND_OF_TEXT_VOICES } from '../constants';
 import { TextProcessor } from '../services/textProcessor';
 import { synthesizeChunk } from '../services/ttsService';
+import { synthesizeSoundOfText } from '../services/soundOfTextService';
 import { Configuration } from './Configuration';
 import { ResultsPanel } from './ResultsPanel';
 import { keyManager } from '../services/keyManager';
@@ -11,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const TextToSpeech: React.FC = () => {
     const [chunks, setChunks] = useState<ChunkJob[]>([]);
+    const [engine, setEngine] = useState<'capcut' | 'soundoftext'>('capcut');
     const [speaker, setSpeaker] = useState<string>(SPEAKER_GROUPS[0].speakers[0].id);
     const [selectedCountry, setSelectedCountry] = useState<string>(SPEAKER_GROUPS[0].country);
     const [processingState, setProcessingState] = useState<ProcessingState>('idle');
@@ -128,7 +130,9 @@ export const TextToSpeech: React.FC = () => {
     const processQueue = useCallback(async () => {
         const token = keyManager.getKey('tts');
         
-        if (!token) {
+        console.log(`[TTS] Starting queue processing. Engine: ${engine}, Chunks: ${chunks.length}`);
+
+        if (engine === 'capcut' && !token) {
             alert("Vui lòng nhập API Key trong phần Cài đặt (Dòng 1) trước khi bắt đầu.");
             return;
         }
@@ -139,6 +143,7 @@ export const TextToSpeech: React.FC = () => {
         
         const chunksToProcess = chunks.filter(c => c.status === 'pending');
         if (chunksToProcess.length === 0) {
+            console.log("[TTS] No pending chunks to process.");
             setProcessingState('idle');
             return;
         }
@@ -146,25 +151,37 @@ export const TextToSpeech: React.FC = () => {
         const processSingleChunk = async (chunk: ChunkJob) => {
             if (signal.aborted) return;
             
+            console.log(`[TTS] Processing chunk: ${chunk.id}, Text: "${chunk.text.substring(0, 20)}..."`);
             updateChunk(chunk.id, { status: 'processing', error: null });
             
             try {
-                const audioUrl = await synthesizeChunk({
-                    text: chunk.text,
-                    speaker,
-                    token,
-                    appkey: APP_KEY,
-                });
+                let audioUrl: string;
+                if (engine === 'capcut') {
+                    audioUrl = await synthesizeChunk({
+                        text: chunk.text,
+                        speaker,
+                        token: token!,
+                        appkey: APP_KEY,
+                    });
+                } else {
+                    audioUrl = await synthesizeSoundOfText({
+                        text: chunk.text,
+                        voice: speaker,
+                    });
+                }
+                
                 if (!signal.aborted) {
+                    console.log(`[TTS] Chunk finished: ${chunk.id}`);
                     updateChunk(chunk.id, { status: 'finished', audioUrl });
                 }
             } catch (err: any) {
-                if (err.message?.includes('token') || err.message?.includes('401') || err.message?.includes('429')) {
-                    keyManager.markKeyAsBad(token);
+                console.error(`[TTS] Error processing chunk ${chunk.id}:`, err);
+                if (engine === 'capcut' && (err.message?.includes('token') || err.message?.includes('401') || err.message?.includes('429'))) {
+                    keyManager.markKeyAsBad(token!);
                 }
 
                  if (!signal.aborted) {
-                    updateChunk(chunk.id, { status: 'error', error: (err as Error).message });
+                    updateChunk(chunk.id, { status: 'error', error: (err as Error).message || 'Unknown Error' });
                 }
             }
         };
@@ -187,10 +204,11 @@ export const TextToSpeech: React.FC = () => {
         await Promise.all(workerPromises);
         
         if (!signal.aborted) {
+            console.log("[TTS] Queue processing completed.");
             setProcessingState('idle');
         }
 
-    }, [chunks, speaker, concurrentThreads, requestDelay]);
+    }, [chunks, speaker, concurrentThreads, requestDelay, engine]);
 
     useEffect(() => {
         if (shouldProcess) {
@@ -236,20 +254,30 @@ export const TextToSpeech: React.FC = () => {
     
     const handleCountryChange = (newCountry: string) => {
         setSelectedCountry(newCountry);
-        const newSpeakerGroup = SPEAKER_GROUPS.find(g => g.country === newCountry);
+        const groups = engine === 'capcut' ? SPEAKER_GROUPS : SOUND_OF_TEXT_VOICES;
+        const newSpeakerGroup = groups.find(g => g.country === newCountry);
         if (newSpeakerGroup && newSpeakerGroup.speakers.length > 0) {
             setSpeaker(newSpeakerGroup.speakers[0].id);
         }
     };
 
+    const handleEngineChange = (newEngine: 'capcut' | 'soundoftext') => {
+        setEngine(newEngine);
+        const groups = newEngine === 'capcut' ? SPEAKER_GROUPS : SOUND_OF_TEXT_VOICES;
+        setSelectedCountry(groups[0].country);
+        setSpeaker(groups[0].speakers[0].id);
+    };
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
             <Configuration
+                engine={engine}
+                onEngineChange={handleEngineChange}
                 speaker={speaker}
                 setSpeaker={setSpeaker}
                 selectedCountry={selectedCountry}
                 onCountryChange={handleCountryChange}
-                speakerGroups={SPEAKER_GROUPS}
+                speakerGroups={engine === 'capcut' ? SPEAKER_GROUPS : SOUND_OF_TEXT_VOICES}
                 isProcessing={processingState === 'processing'}
                 onProcessQueue={processQueue}
                 onAddContent={addContent}

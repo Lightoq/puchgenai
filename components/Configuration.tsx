@@ -4,6 +4,8 @@ import type { SpeakerGroup } from '../types';
 import { FileUpload } from './FileUpload';
 
 interface ConfigurationProps {
+    engine: 'capcut' | 'soundoftext';
+    onEngineChange: (engine: 'capcut' | 'soundoftext') => void;
     speaker: string;
     setSpeaker: (speakerId: string) => void;
     selectedCountry: string;
@@ -24,6 +26,7 @@ interface ConfigurationProps {
 }
 
 export const Configuration: React.FC<ConfigurationProps> = ({
+    engine, onEngineChange,
     speaker, setSpeaker, selectedCountry, onCountryChange, speakerGroups, isProcessing,
     onProcessQueue, onAddContent, pendingChunksCount,
     maxChars, setMaxChars, minCharsToMerge, setMinCharsToMerge,
@@ -66,6 +69,18 @@ export const Configuration: React.FC<ConfigurationProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
+                        <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">Engine</label>
+                        <select
+                            value={engine}
+                            onChange={(e) => onEngineChange(e.target.value as 'capcut' | 'soundoftext')}
+                            className="w-full bg-black border border-white/10 rounded-2xl p-3.5 text-sm text-gray-200 focus:border-teal-500/50 outline-none transition-all shadow-inner appearance-none"
+                        >
+                            <option value="capcut" className="bg-black text-white">CapCut (Gemini)</option>
+                            <option value="soundoftext" className="bg-black text-white">SoundOfText (Google)</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-2">
                         <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">Ngôn ngữ</label>
                         <select
                             value={selectedCountry}
@@ -78,7 +93,7 @@ export const Configuration: React.FC<ConfigurationProps> = ({
                         </select>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 sm:col-span-2">
                         <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">Giọng đọc</label>
                         <select
                             value={speaker}
