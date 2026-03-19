@@ -266,6 +266,13 @@ export const TextToSpeech: React.FC = () => {
         const groups = newEngine === 'capcut' ? SPEAKER_GROUPS : SOUND_OF_TEXT_VOICES;
         setSelectedCountry(groups[0].country);
         setSpeaker(groups[0].speakers[0].id);
+        
+        // Adjust maxChars based on engine limits
+        if (newEngine === 'soundoftext') {
+            setMaxChars(200);
+        } else {
+            setMaxChars(1500);
+        }
     };
 
     return (

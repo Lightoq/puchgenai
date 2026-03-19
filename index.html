@@ -29,6 +29,15 @@
     100% { background-position: 0% 50%; }
   }
 
+  @keyframes bounce-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .animate-bounce-slow {
+    animation: bounce-slow 3s infinite ease-in-out;
+  }
+
   .animate-rgb-text {
     animation: rgb-text 6s infinite linear;
   }

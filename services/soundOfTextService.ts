@@ -25,6 +25,12 @@ const fetchWithTimeout = async (url: string, options: any = {}, timeout = 15000)
 
 export const synthesizeSoundOfText = async (options: SoundOfTextOptions): Promise<string> => {
   console.log(`[SoundOfText] Starting synthesis for: "${options.text.substring(0, 20)}..."`);
+  
+  // SoundOfText (Google engine) has a 200 character limit per request.
+  if (options.text.length > 200) {
+    throw new Error('Văn bản quá dài cho SoundOfText (Tối đa 200 ký tự). Vui lòng giảm "Ký tự tối đa/đoạn" trong Cài đặt nâng cao.');
+  }
+
   try {
     // 1. Request sound creation
     const createResponse = await fetchWithTimeout('https://api.soundoftext.com/sounds', {
@@ -57,9 +63,9 @@ export const synthesizeSoundOfText = async (options: SoundOfTextOptions): Promis
     let status = 'pending';
     let location = '';
     let attempts = 0;
-    const maxAttempts = 20; // 20 seconds max
+    const maxAttempts = 40; // 60 seconds max (40 * 1.5s)
 
-    while (status !== 'done' && attempts < maxAttempts) {
+    while (status !== 'done' && status !== 'error' && attempts < maxAttempts) {
       console.log(`[SoundOfText] Polling status... Attempt ${attempts + 1}/${maxAttempts}`);
       await new Promise(resolve => setTimeout(resolve, 1500)); // Wait 1.5s between polls
       
@@ -75,8 +81,12 @@ export const synthesizeSoundOfText = async (options: SoundOfTextOptions): Promis
       attempts++;
     }
 
+    if (status === 'error') {
+      throw new Error('SoundOfText API trả về trạng thái lỗi khi xử lý đoạn này.');
+    }
+
     if (status !== 'done') {
-      throw new Error('SoundOfText synthesis timed out (Hết thời gian chờ xử lý).');
+      throw new Error('SoundOfText synthesis timed out (Hết thời gian chờ xử lý). Có thể do văn bản quá dài hoặc máy chủ bận.');
     }
 
     console.log("[SoundOfText] Synthesis done, fetching audio from:", location);

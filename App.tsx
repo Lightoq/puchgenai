@@ -5,6 +5,7 @@ import { Settings } from './components/Settings';
 import { TextToSpeech } from './components/TextToSpeech';
 import { TextFilter } from './components/TextFilter';
 import { AudioToSubtitles } from './components/AudioToSubtitles';
+import { SoundOfTextPlus } from './components/SoundOfTextPlus';
 
 const TabButton: React.FC<{ 
     name: string; 
@@ -39,7 +40,7 @@ const TabButton: React.FC<{
 };
 
 const App: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'tts' | 'filter' | 'transcribe' | 'settings'>('tts');
+    const [activeTab, setActiveTab] = useState<'tts' | 'filter' | 'transcribe' | 'sotplus' | 'settings'>('tts');
     
     return (
         <div className="min-h-screen flex flex-col bg-[#020202]">
@@ -73,6 +74,13 @@ const App: React.FC = () => {
                             activeColorClass="text-indigo-400 bg-indigo-500/10"
                             icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>}
                         />
+                        <TabButton 
+                            name="SOT Plus" 
+                            active={activeTab === 'sotplus'} 
+                            onClick={() => setActiveTab('sotplus')} 
+                            activeColorClass="text-rose-400 bg-rose-500/10"
+                            icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>}
+                        />
                         <div className="flex-grow"></div>
                         <TabButton 
                             name="Cấu hình" 
@@ -89,6 +97,7 @@ const App: React.FC = () => {
                  {activeTab === 'tts' && <TextToSpeech />}
                  {activeTab === 'filter' && <TextFilter />}
                  {activeTab === 'transcribe' && <AudioToSubtitles />}
+                 {activeTab === 'sotplus' && <SoundOfTextPlus />}
                  {activeTab === 'settings' && <Settings />}
             </main>
 
