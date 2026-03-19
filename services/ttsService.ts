@@ -9,13 +9,18 @@ interface SynthesizeOptions {
 
 // Helper to decode base64 string to Uint8Array for browser environment
 const b64decode = (str: string): Uint8Array => {
-    const binary_string = window.atob(str);
-    const len = binary_string.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-        bytes[i] = binary_string.charCodeAt(i);
+    try {
+        const binary_string = window.atob(str);
+        const len = binary_string.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binary_string.charCodeAt(i);
+        }
+        return bytes;
+    } catch (e) {
+        console.error("Base64 decode error:", e);
+        return new Uint8Array(0);
     }
-    return bytes;
 };
 
 // Custom Error for better debugging

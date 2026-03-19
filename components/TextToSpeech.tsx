@@ -23,11 +23,11 @@ export const TextToSpeech: React.FC = () => {
     
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    const successfulChunksCount = chunks.filter(c => c.status === 'finished').length;
-    const failedChunksCount = chunks.filter(c => c.status === 'error').length;
+    const successfulChunksCount = React.useMemo(() => chunks.filter(c => c.status === 'finished').length, [chunks]);
+    const failedChunksCount = React.useMemo(() => chunks.filter(c => c.status === 'error').length, [chunks]);
     const totalChunksCount = chunks.length;
-    const remainingChunksCount = chunks.filter(c => c.status === 'pending' || c.status === 'processing').length;
-    const pendingChunksCount = chunks.filter(c => c.status === 'pending').length;
+    const remainingChunksCount = React.useMemo(() => chunks.filter(c => c.status === 'pending' || c.status === 'processing').length, [chunks]);
+    const pendingChunksCount = React.useMemo(() => chunks.filter(c => c.status === 'pending').length, [chunks]);
     
     useEffect(() => {
         const mergeAudio = async () => {
@@ -41,12 +41,10 @@ export const TextToSpeech: React.FC = () => {
                 const blobs = await Promise.all(blobPromises);
                 const mergedBlob = new Blob(blobs, { type: 'audio/mpeg' });
                 
-                if (mergedAudioUrl) {
-                    URL.revokeObjectURL(mergedAudioUrl);
-                }
-
-                const url = URL.createObjectURL(mergedBlob);
-                setMergedAudioUrl(url);
+                setMergedAudioUrl(prev => {
+                    if (prev) URL.revokeObjectURL(prev);
+                    return URL.createObjectURL(mergedBlob);
+                });
             } catch (error) {
                 console.error("Gộp file âm thanh thất bại:", error);
             }
@@ -57,11 +55,9 @@ export const TextToSpeech: React.FC = () => {
 
         if (processingState === 'idle' && areAllJobsDone && hasFinishedChunks && failedChunksCount === 0) {
             mergeAudio();
-        } else {
-            if (mergedAudioUrl) {
-                URL.revokeObjectURL(mergedAudioUrl);
-                setMergedAudioUrl(null);
-            }
+        } else if (mergedAudioUrl) {
+            URL.revokeObjectURL(mergedAudioUrl);
+            setMergedAudioUrl(null);
         }
         
         return () => {
@@ -72,7 +68,7 @@ export const TextToSpeech: React.FC = () => {
     }, [chunks, processingState, failedChunksCount]);
 
 
-    const addContent = (content: string | Array<{ text: string; timestamp: string }>) => {
+    const addContent = useCallback((content: string | Array<{ text: string; timestamp: string }>) => {
         let newChunkJobs: ChunkJob[];
 
         if (typeof content === 'string') {
@@ -93,37 +89,37 @@ export const TextToSpeech: React.FC = () => {
         }
         
         setChunks(prevChunks => [...prevChunks, ...newChunkJobs]);
-    };
+    }, [maxChars, minCharsToMerge]);
 
-    const removeChunk = (chunkId: string) => {
+    const removeChunk = useCallback((chunkId: string) => {
         setChunks(prevChunks => prevChunks.filter(chunk => chunk.id !== chunkId));
-    };
+    }, []);
 
-    const clearQueue = () => {
+    const clearQueue = useCallback(() => {
         setChunks([]);
-    };
+    }, []);
 
-    const updateChunk = (chunkId: string, updates: Partial<ChunkJob>) => {
+    const updateChunk = useCallback((chunkId: string, updates: Partial<ChunkJob>) => {
         setChunks(prevChunks => 
             prevChunks.map(chunk => 
                 chunk.id === chunkId ? { ...chunk, ...updates } : chunk
             )
         );
-    };
+    }, []);
     
-    const retryChunk = (chunkId: string) => {
+    const retryChunk = useCallback((chunkId: string) => {
         setChunks(prev => 
             prev.map(c => c.id === chunkId ? { ...c, status: 'pending', error: null } : c)
         );
         setShouldProcess(true);
-    };
+    }, []);
 
-    const retryAllFailed = () => {
+    const retryAllFailed = useCallback(() => {
         setChunks(prev => 
             prev.map(c => c.status === 'error' ? { ...c, status: 'pending', error: null } : c)
         );
         setShouldProcess(true);
-    };
+    }, []);
 
     const processQueue = useCallback(async () => {
         const token = keyManager.getKey('tts');
@@ -137,60 +133,68 @@ export const TextToSpeech: React.FC = () => {
         abortControllerRef.current = new AbortController();
         const signal = abortControllerRef.current.signal;
         
-        const chunksToProcess = chunks.filter(c => c.status === 'pending');
-        if (chunksToProcess.length === 0) {
-            setProcessingState('idle');
-            return;
-        }
-
-        const processSingleChunk = async (chunk: ChunkJob) => {
-            if (signal.aborted) return;
-            
-            updateChunk(chunk.id, { status: 'processing', error: null });
-            
-            try {
-                const audioUrl = await synthesizeChunk({
-                    text: chunk.text,
-                    speaker,
-                    token,
-                    appkey: APP_KEY,
-                });
-                if (!signal.aborted) {
-                    updateChunk(chunk.id, { status: 'finished', audioUrl });
-                }
-            } catch (err: any) {
-                if (err.message?.includes('token') || err.message?.includes('401') || err.message?.includes('429')) {
-                    keyManager.markKeyAsBad(token);
-                }
-
-                 if (!signal.aborted) {
-                    updateChunk(chunk.id, { status: 'error', error: (err as Error).message });
-                }
+        // Use a ref-like approach to get the latest chunks without re-creating the callback
+        setChunks(currentChunks => {
+            const chunksToProcess = currentChunks.filter(c => c.status === 'pending');
+            if (chunksToProcess.length === 0) {
+                setProcessingState('idle');
+                return currentChunks;
             }
-        };
-        
-        const queue = [...chunksToProcess];
-        
-        const workerPromises = Array(concurrentThreads).fill(null).map(async () => {
-            while (queue.length > 0) {
-                if (signal.aborted) break;
-                const chunk = queue.shift();
-                if (chunk) {
-                    await processSingleChunk(chunk);
-                    if (requestDelay > 0 && !signal.aborted) {
-                        await new Promise(resolve => setTimeout(resolve, requestDelay));
+
+            const processSingleChunk = async (chunk: ChunkJob) => {
+                if (signal.aborted) return;
+                
+                updateChunk(chunk.id, { status: 'processing', error: null });
+                
+                try {
+                    const audioUrl = await synthesizeChunk({
+                        text: chunk.text,
+                        speaker,
+                        token,
+                        appkey: APP_KEY,
+                    });
+                    if (!signal.aborted) {
+                        updateChunk(chunk.id, { status: 'finished', audioUrl });
+                    }
+                } catch (err: any) {
+                    if (err.message?.includes('token') || err.message?.includes('401') || err.message?.includes('429')) {
+                        keyManager.markKeyAsBad(token);
+                    }
+
+                     if (!signal.aborted) {
+                        updateChunk(chunk.id, { status: 'error', error: (err as Error).message });
                     }
                 }
-            }
+            };
+            
+            const queue = [...chunksToProcess];
+            
+            const runWorkers = async () => {
+                const workerPromises = Array(concurrentThreads).fill(null).map(async () => {
+                    while (queue.length > 0) {
+                        if (signal.aborted) break;
+                        const chunk = queue.shift();
+                        if (chunk) {
+                            await processSingleChunk(chunk);
+                            if (requestDelay > 0 && !signal.aborted) {
+                                await new Promise(resolve => setTimeout(resolve, requestDelay));
+                            }
+                        }
+                    }
+                });
+
+                await Promise.all(workerPromises);
+                
+                if (!signal.aborted) {
+                    setProcessingState('idle');
+                }
+            };
+
+            runWorkers();
+            return currentChunks;
         });
 
-        await Promise.all(workerPromises);
-        
-        if (!signal.aborted) {
-            setProcessingState('idle');
-        }
-
-    }, [chunks, speaker, concurrentThreads, requestDelay]);
+    }, [speaker, concurrentThreads, requestDelay, updateChunk]);
 
     useEffect(() => {
         if (shouldProcess) {

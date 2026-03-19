@@ -53,7 +53,7 @@ export const ImageGenerator: React.FC = () => {
         const prompts = mode === 'single' ? [singlePrompt.trim()] : batchPrompts.split('\n').filter(p => p.trim());
         if (prompts.length === 0) return;
 
-        const apiKey = keyManager.getKey('image_video');
+        const apiKey = process.env.API_KEY || keyManager.getKey('image_video');
         if (!apiKey) { setError('Missing API Key in Settings (Row 2)'); return; }
 
         setLoading(true); setError(null); setGeneratedImages([]);

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import type { ChunkJob } from '../types';
 import { Loader } from './Loader';
 
@@ -10,7 +10,7 @@ interface ChunkCardProps {
     onRetry: (chunkId: string) => void;
 }
 
-export const ChunkCard: React.FC<ChunkCardProps> = ({ chunk, index, onRemove, onRetry }) => {
+export const ChunkCard: React.FC<ChunkCardProps> = memo(({ chunk, index, onRemove, onRetry }) => {
     
     const renderStatusSpecificContent = () => {
         switch (chunk.status) {
@@ -68,4 +68,4 @@ export const ChunkCard: React.FC<ChunkCardProps> = ({ chunk, index, onRemove, on
             {renderStatusSpecificContent()}
         </div>
     );
-};
+});

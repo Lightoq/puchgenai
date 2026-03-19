@@ -19,3 +19,12 @@ export interface ChunkJob {
 }
 
 export type ProcessingState = 'idle' | 'processing';
+
+declare global {
+  interface Window {
+    aistudio: {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    };
+  }
+}

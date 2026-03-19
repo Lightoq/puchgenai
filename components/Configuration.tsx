@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import type { SpeakerGroup } from '../types';
 import { FileUpload } from './FileUpload';
 
@@ -23,7 +23,7 @@ interface ConfigurationProps {
     setRequestDelay: (value: number) => void;
 }
 
-export const Configuration: React.FC<ConfigurationProps> = ({
+export const Configuration: React.FC<ConfigurationProps> = memo(({
     speaker, setSpeaker, selectedCountry, onCountryChange, speakerGroups, isProcessing,
     onProcessQueue, onAddContent, pendingChunksCount,
     maxChars, setMaxChars, minCharsToMerge, setMinCharsToMerge,
@@ -174,4 +174,7 @@ export const Configuration: React.FC<ConfigurationProps> = ({
             </div>
         </div>
     );
-};
+});
+
+Configuration.displayName = 'Configuration';
+

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { FileUpload } from './FileUpload';
 
 interface PhoneticEntry {
@@ -8,10 +8,79 @@ interface PhoneticEntry {
     phonetic: string;
 }
 
+const DYNAMIC_JUNK_PATTERNS = [
+    /^\d+\s+nhận\s+xét$/i,
+    /^\d+\s+còn\s+lại$/i,
+    /^\d+\s+left$/i,
+    /^bỏ\s+phiếu$/i,
+    /^\d+\s+bình\s+luận$/i,
+    /^bình\s+luận$/i, 
+    /^thêm\s+bình\s+luận$/i,
+    /^\d+\s+comment(s)?$/i,
+    /^suy\s+nghĩ\s+của\s+người\s+sáng\s+tạo$/i,
+    /^rắn\s+hồng$/i,
+    /(?:https?:\/\/)?discord\.(?:gg|com\/invite)\/\S+/i,
+    /\d+\s+power\s+stones\s*=\s*\d+\s+chương\s+bônus/i, 
+    /\d+\s+đánh\s+giá\s*=\s*\d+\s+chương\s+bônus/i,   
+    /\d+\s+stones\s*=\s*\d+\s+bonus/i                  
+];
+
+const NUMBER_UNITS = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+const NUMBER_GROUPS = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ", "tỷ tỷ"];
+
+const numberToVietnamese = (numStr: string): string => {
+    let cleanNum = numStr.replace(/\./g, "");
+    if (isNaN(parseInt(cleanNum))) return numStr;
+    if (parseInt(cleanNum) === 0) return "không";
+    
+    let pos = cleanNum.length;
+    let chunks: string[] = [];
+    while (pos > 0) {
+        let start = Math.max(0, pos - 3);
+        chunks.push(cleanNum.substring(start, pos).padStart(3, '0'));
+        pos = start;
+    }
+    
+    let result = "";
+    let hasStarted = false;
+    for (let i = chunks.length - 1; i >= 0; i--) {
+        let n = chunks[i];
+        let v = parseInt(n);
+        if (v === 0) continue;
+        
+        let a = parseInt(n[0]);
+        let b = parseInt(n[1]);
+        let c = parseInt(n[2]);
+        let chunkText = "";
+        
+        if (hasStarted) {
+            if (a !== 0) chunkText += NUMBER_UNITS[a] + " trăm ";
+            else {
+                if (b !== 0) chunkText += "không trăm ";
+                else chunkText += "lẻ ";
+            }
+        } else {
+            if (a !== 0) chunkText += NUMBER_UNITS[a] + " trăm ";
+        }
+        
+        if (b !== 0 && b !== 1) chunkText += NUMBER_UNITS[b] + " mươi ";
+        else if (b === 1) chunkText += "mười ";
+        
+        if (c !== 0) {
+            if (c === 1 && b > 1) chunkText += "mốt";
+            else if (c === 5 && b > 0) chunkText += "lăm";
+            else chunkText += NUMBER_UNITS[c];
+        }
+        
+        result += chunkText.trim() + " " + NUMBER_GROUPS[i] + " ";
+        hasStarted = true;
+    }
+    return result.trim().replace(/\s+/g, ' ');
+};
+
 export const TextFilter: React.FC = () => {
     const [inputText, setInputText] = useState('');
     const [outputText, setOutputText] = useState('');
-    // Cập nhật junkKeywords với các từ khóa mới người dùng yêu cầu
     const [junkKeywords, setJunkKeywords] = useState('comment, 0 comment, Vote, SEND GIFT, bình luận, 0 bình luận, bỏ phiếu, gửi quà tặng, gửI quà tặng, P@treon, PinkSnake, chương phía trước, vui lòng theo dõi tôi, p@treon.com/PinkSnake, nhận xét, còn lại, SUY NGHĨ CỦA NGƯỜI SÁNG TẠO, Rắn hồng, discord.gg, https://discord.gg/7mNvAaTtkf, Power Stones, Đánh giá, Bonus, 1 left, 2 left, 3 left, 4 left, 5 left, 6 left, 7 left, 8 left, 9 left, discord.com/invite');
     
     const [phoneticDict, setPhoneticDict] = useState<PhoneticEntry[]>([]);
@@ -56,11 +125,19 @@ export const TextFilter: React.FC = () => {
         }
     }, [phoneticDict]);
 
-    const handleOptionChange = (key: keyof typeof options) => {
-        setOptions(prev => ({ ...prev, [key]: !prev[key] }));
-    };
+    const sortedPhoneticDict = useMemo(() => {
+        return [...phoneticDict].sort((a, b) => b.original.length - a.original.length);
+    }, [phoneticDict]);
 
-    const addPhoneticEntry = () => {
+    const keywordsList = useMemo(() => {
+        return junkKeywords.split(',').map(k => k.trim().toLowerCase()).filter(k => k !== "");
+    }, [junkKeywords]);
+
+    const handleOptionChange = useCallback((key: keyof typeof options) => {
+        setOptions(prev => ({ ...prev, [key]: !prev[key] }));
+    }, []);
+
+    const addPhoneticEntry = useCallback(() => {
         if (!newOriginal.trim() || !newPhonetic.trim()) return;
         const newEntry: PhoneticEntry = {
             id: Date.now().toString(),
@@ -70,82 +147,19 @@ export const TextFilter: React.FC = () => {
         setPhoneticDict(prev => [...prev, newEntry]);
         setNewOriginal('');
         setNewPhonetic('');
-    };
+    }, [newOriginal, newPhonetic]);
 
-    const removePhoneticEntry = (id: string) => {
+    const removePhoneticEntry = useCallback((id: string) => {
         setPhoneticDict(prev => prev.filter(item => item.id !== id));
-    };
+    }, []);
 
-    const numberToVietnamese = (numStr: string): string => {
-        const units = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
-        const groups = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ", "tỷ tỷ"];
-        let cleanNum = numStr.replace(/\./g, "");
-        if (isNaN(parseInt(cleanNum))) return numStr;
-        if (parseInt(cleanNum) === 0) return "không";
-        let pos = cleanNum.length;
-        let chunks: string[] = [];
-        while (pos > 0) {
-            let start = Math.max(0, pos - 3);
-            chunks.push(cleanNum.substring(start, pos).padStart(3, '0'));
-            pos = start;
-        }
-        let result = "";
-        let hasStarted = false;
-        for (let i = chunks.length - 1; i >= 0; i--) {
-            let n = chunks[i];
-            let v = parseInt(n);
-            if (v === 0) continue;
-            let a = parseInt(n[0]);
-            let b = parseInt(n[1]);
-            let c = parseInt(n[2]);
-            let chunkText = "";
-            if (hasStarted) {
-                if (a !== 0) chunkText += units[a] + " trăm ";
-                else {
-                    if (b !== 0) chunkText += "không trăm ";
-                    else chunkText += "lẻ ";
-                }
-            } else {
-                if (a !== 0) chunkText += units[a] + " trăm ";
-            }
-            if (b !== 0 && b !== 1) chunkText += units[b] + " mươi ";
-            else if (b === 1) chunkText += "mười ";
-            if (c !== 0) {
-                if (c === 1 && b > 1) chunkText += "mốt";
-                else if (c === 5 && b > 0) chunkText += "lăm";
-                else chunkText += units[c];
-            }
-            result += chunkText.trim() + " " + groups[i] + " ";
-            hasStarted = true;
-        }
-        return result.trim().replace(/\s+/g, ' ');
-    };
-
-    const processText = () => {
+    const processText = useCallback(() => {
         if (!inputText.trim()) return;
 
         let lines = inputText.split(/\r?\n/);
-        const keywords = junkKeywords.split(',').map(k => k.trim().toLowerCase()).filter(k => k !== "");
         
         let finalLines: string[] = [];
         let i = 0;
-
-        const dynamicJunkPatterns = [
-            /^\d+\s+nhận\s+xét$/i,
-            /^\d+\s+còn\s+lại$/i,
-            /^\d+\s+left$/i,
-            /^bỏ\s+phiếu$/i,
-            /^\d+\s+bình\s+luận$/i,
-            /^bình\s+luận$/i, 
-            /^thêm\s+bình\s+luận$/i,
-            /^\d+\s+comment(s)?$/i,
-            /^suy\s+nghĩ\s+của\s+người\s+sáng\s+tạo$/i,
-            /^rắn\s+hồng$/i,
-            /(?:https?:\/\/)?discord\.(?:gg|com\/invite)\/\S+/i,
-            /\d+\s+power\s+stones\s*=\s*\d+\s+chương\s+bônus/i, 
-            /\d+\s+đánh\s+giá\s*=\s*\d+\s+chương\s+bônus/i,   
-            /\d+\s+stones\s*=\s*\d+\s+bonus/i                  
-        ];
 
         while (i < lines.length) {
             let line = lines[i];
@@ -166,22 +180,22 @@ export const TextFilter: React.FC = () => {
                 }
             }
 
-            const isDynamicJunk = dynamicJunkPatterns.some(pattern => pattern.test(lineTrimmed));
+            const isDynamicJunk = DYNAMIC_JUNK_PATTERNS.some(pattern => pattern.test(lineTrimmed));
             if (isDynamicJunk) {
                 i++;
                 continue;
             }
 
             if (options.removeJunkBlocks) {
-                let isCurrentJunk = keywords.some(k => lineLower.includes(k));
+                let isCurrentJunk = keywordsList.some(k => lineLower.includes(k));
                 if (isCurrentJunk) {
                     let nextJunkIdx = -1;
                     for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
                         let nextLineTrimmed = lines[j].trim();
                         let nextLineLower = nextLineTrimmed.toLowerCase();
                         if (nextLineLower === "") continue; 
-                        const isNextDynamicJunk = dynamicJunkPatterns.some(pattern => pattern.test(nextLineTrimmed));
-                        if (isNextDynamicJunk || keywords.some(k => nextLineLower.includes(k))) {
+                        const isNextDynamicJunk = DYNAMIC_JUNK_PATTERNS.some(pattern => pattern.test(nextLineTrimmed));
+                        if (isNextDynamicJunk || keywordsList.some(k => nextLineLower.includes(k))) {
                             nextJunkIdx = j;
                             break;
                         }
@@ -191,8 +205,8 @@ export const TextFilter: React.FC = () => {
                         while (i < lines.length) {
                             let checkLineTrimmed = lines[i].trim();
                             let checkLineLower = checkLineTrimmed.toLowerCase();
-                            const isCheckDynamicJunk = dynamicJunkPatterns.some(pattern => pattern.test(checkLineTrimmed));
-                            if (checkLineLower === "" || isCheckDynamicJunk || keywords.some(k => checkLineLower.includes(k))) {
+                            const isCheckDynamicJunk = DYNAMIC_JUNK_PATTERNS.some(pattern => pattern.test(checkLineTrimmed));
+                            if (checkLineLower === "" || isCheckDynamicJunk || keywordsList.some(k => checkLineLower.includes(k))) {
                                 i++;
                             } else {
                                 break; 
@@ -214,8 +228,7 @@ export const TextFilter: React.FC = () => {
         let result = finalLines.join('\n');
         
         if (options.manualPhonetic) {
-            const sortedDict = [...phoneticDict].sort((a, b) => b.original.length - a.original.length);
-            sortedDict.forEach(entry => {
+            sortedPhoneticDict.forEach(entry => {
                 if (!entry.original.trim()) return;
                 try {
                     const escaped = entry.original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -252,27 +265,27 @@ export const TextFilter: React.FC = () => {
         }
 
         setOutputText(result);
-    };
+    }, [inputText, options, sortedPhoneticDict, keywordsList]);
 
-    const copyResult = () => {
+    const copyResult = useCallback(() => {
         if (!outputText) return;
         navigator.clipboard.writeText(outputText);
         setToast(true);
         setTimeout(() => setToast(false), 2000);
-    };
+    }, [outputText]);
 
-    const clearAll = () => {
+    const clearAll = useCallback(() => {
         setInputText('');
         setOutputText('');
-    };
+    }, []);
 
-    const handleFileProcessed = (content: string | Array<{ text: string; timestamp: string }>) => {
+    const handleFileProcessed = useCallback((content: string | Array<{ text: string; timestamp: string }>) => {
         if (typeof content === 'string') {
             setInputText(content);
         } else {
             setInputText(content.map(c => c.text).join('\n'));
         }
-    };
+    }, []);
 
     return (
         <div className="max-w-6xl mx-auto glass-effect p-8 rounded-[40px] animate-rgb-border shadow-2xl relative">
