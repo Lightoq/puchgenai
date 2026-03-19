@@ -56,18 +56,10 @@ export const SoundOfTextPlus: React.FC = () => {
       timestamp: new Date().toLocaleTimeString()
     };
 
-    // Kiểm tra sơ bộ URL
-    const tempAudio = new Audio();
-    tempAudio.src = audioUrl;
-    tempAudio.oncanplaythrough = () => {
-      setItems(prev => [newItem, ...prev]);
-      setText('');
-      setLoading(false);
-    };
-    tempAudio.onerror = () => {
-      setError("Không thể kết nối với máy chủ Google TTS.");
-      setLoading(false);
-    };
+    // Thêm luôn vào danh sách, không đợi load trước để tránh lỗi CORS/Preload của trình duyệt
+    setItems(prev => [newItem, ...prev]);
+    setText('');
+    setLoading(false);
   };
 
   const updateItemParam = (id: number, param: string, value: string) => {
@@ -77,16 +69,21 @@ export const SoundOfTextPlus: React.FC = () => {
   };
 
   const playAudio = (item: any) => {
+    setError(null);
     try {
       const audio = audioRef.current;
       audio.src = item.url;
       audio.playbackRate = item.speed;
-      audio.play().catch(err => {
-        console.error(err);
-        setError("Trình duyệt chặn tự động phát hoặc lỗi kết nối.");
-      });
+      
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.error("Playback error:", err);
+          setError("Không thể phát âm thanh. Có thể do Google chặn truy cập trực tiếp hoặc lỗi mạng.");
+        });
+      }
     } catch (err) {
-      setError("Lỗi khi phát âm thanh.");
+      setError("Lỗi khi khởi tạo trình phát.");
     }
   };
 
