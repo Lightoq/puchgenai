@@ -1,101 +1,88 @@
 
-import React, { useState, Suspense, lazy, memo } from 'react';
+import React, { useState } from 'react';
 import { Logo } from './components/Logo';
+import { Settings } from './components/Settings';
+import { TextToSpeech } from './components/TextToSpeech';
+import { TextFilter } from './components/TextFilter';
 
-const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
-const TextToSpeech = lazy(() => import('./components/TextToSpeech').then(m => ({ default: m.TextToSpeech })));
-const TextFilter = lazy(() => import('./components/TextFilter').then(m => ({ default: m.TextFilter })));
-
-const TabButton = memo<{ 
+const TabButton: React.FC<{ 
     name: string; 
     active: boolean; 
     onClick: () => void; 
-    activeColorClass: string; 
     icon: React.ReactNode;
-}>(({ name, active, onClick, activeColorClass, icon }) => {
-    const activeClasses = `${activeColorClass} font-bold shadow-[0_4px_15px_-4px_rgba(255,255,255,0.1)] scale-105 z-10`;
-    const inactiveClasses = 'border-transparent text-gray-600 hover:text-gray-300 hover:bg-white/5';
-
+}> = ({ name, active, onClick, icon }) => {
     return (
         <button
             onClick={onClick}
-            className={`group relative flex items-center gap-2 whitespace-nowrap py-3 px-5 text-xs sm:text-sm transition-all duration-300 focus:outline-none rounded-2xl active:scale-95 ${active ? activeClasses : inactiveClasses}`}
-            aria-current={active ? 'page' : undefined}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all rounded-lg ${
+                active 
+                ? 'bg-blue-600 text-white shadow-sm' 
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+            }`}
         >
-            {active && (
-                <span className="absolute inset-0 bg-current opacity-[0.05] rounded-2xl animate-pulse"></span>
-            )}
-            
-            <span className={`transition-all duration-500 ${active ? 'scale-110' : 'opacity-40 group-hover:opacity-100'}`}>
-                {icon}
-            </span>
-            <span className={`relative z-10 uppercase tracking-tighter text-[10px] font-black ${active ? 'text-white' : ''}`}>{name}</span>
-            
-            {active && (
-                <span className="absolute bottom-0.5 left-5 right-5 h-[2px] bg-current rounded-full"></span>
-            )}
+            <span className={active ? 'text-white' : 'text-gray-400'}>{icon}</span>
+            <span>{name}</span>
         </button>
     );
-});
-
-TabButton.displayName = 'TabButton';
+};
 
 const App: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'tts' | 'filter' | 'settings'>('tts');
     
     return (
-        <div className="min-h-screen flex flex-col bg-[#020202]">
-            {/* Sticky Navigation Bar with Integrated Logo */}
-            <div className="sticky top-0 z-50 glass-effect border-b border-white/5 shadow-2xl animate-rgb-border">
-                <div className="container mx-auto px-4 flex items-center">
-                    <div className="flex items-center gap-2 mr-6 py-2 border-r border-white/5 pr-6">
-                        <Logo className="h-7 w-7 filter drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" />
-                        <span className="text-xs font-black italic tracking-tighter animate-rgb-text hidden sm:block">PUCH</span>
+        <div className="min-h-screen flex flex-col bg-gray-50">
+            <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+                <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Logo className="h-8 w-8 text-blue-600" />
+                        <h1 className="text-xl font-bold tracking-tight text-gray-900">Vocalis</h1>
+                        <span className="hidden sm:inline-block px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded uppercase tracking-wider">Pro Suite</span>
                     </div>
 
-                    <nav className="flex items-center space-x-1 py-1 overflow-x-auto no-scrollbar scroll-smooth flex-grow">
+                    <nav className="flex items-center gap-1">
                         <TabButton 
-                            name="TTS Batch" 
+                            name="Tổng hợp" 
                             active={activeTab === 'tts'} 
                             onClick={() => setActiveTab('tts')} 
-                            activeColorClass="text-teal-400 bg-teal-500/10"
-                            icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>}
+                            icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>}
                         />
                         <TabButton 
-                            name="Lọc Chữ" 
+                            name="Lọc văn bản" 
                             active={activeTab === 'filter'} 
                             onClick={() => setActiveTab('filter')} 
-                            activeColorClass="text-amber-400 bg-amber-500/10"
-                            icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>}
+                            icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>}
                         />
-                        <div className="flex-grow"></div>
+                        <div className="w-px h-6 bg-gray-200 mx-2"></div>
                         <TabButton 
-                            name="Cấu hình" 
+                            name="Cài đặt" 
                             active={activeTab === 'settings'} 
                             onClick={() => setActiveTab('settings')} 
-                            activeColorClass="text-orange-400 bg-orange-500/10"
-                            icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>}
+                            icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>}
                         />
                     </nav>
                 </div>
-            </div>
+            </header>
 
-            <main className="flex-grow container mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                 <Suspense fallback={<div className="flex items-center justify-center h-64 text-white/20 font-black uppercase tracking-[0.5em] animate-pulse">Loading System...</div>}>
-                     {activeTab === 'tts' && <TextToSpeech />}
-                     {activeTab === 'filter' && <TextFilter />}
-                     {activeTab === 'settings' && <Settings />}
-                 </Suspense>
+            <main className="flex-grow container mx-auto p-6 md:p-10">
+                 {activeTab === 'tts' && <TextToSpeech />}
+                 {activeTab === 'filter' && <TextFilter />}
+                 {activeTab === 'settings' && <Settings />}
             </main>
 
-            <footer className="py-6 bg-black text-center">
-                <p className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-800">
-                    PUCH GEN AI SUITE • 2025 NEXT-GEN HUB
-                </p>
+            <footer className="py-8 bg-white border-t border-gray-200">
+                <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">
+                        VOCALIS AUDIO ENGINE • v1.4.0
+                    </p>
+                    <div className="flex gap-6">
+                        <a href="#" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Tài liệu</a>
+                        <a href="#" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Hỗ trợ</a>
+                        <a href="#" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Bảo mật</a>
+                    </div>
+                </div>
             </footer>
         </div>
     );
 };
 
 export default App;
-

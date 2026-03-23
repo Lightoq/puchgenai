@@ -1,35 +1,17 @@
 
-import { mammoth } from '../globals';
-
-export type SubtitleChunk = { text: string; timestamp: string };
-
-const parseSrtContent = (data: string): SubtitleChunk[] => {
-    const blocks = data.trim().replace(/\r/g, '').split('\n\n');
-    return blocks.map(block => {
-        const lines = block.split('\n');
-        if (lines.length < 3) return null;
-        const timestamp = lines[1];
-        const text = lines.slice(2).join('\n').replace(/<[^>]*>/g, '').trim();
-        if (!text) return null;
-        return { text, timestamp };
-    }).filter((chunk): chunk is SubtitleChunk => chunk !== null);
-};
-
-const parseVttContent = (data: string): SubtitleChunk[] => {
-    const blocks = data.trim().replace(/\r/g, '').split('\n\n').slice(1); // Remove WEBVTT header
-    return blocks.map(block => {
-        const lines = block.split('\n');
-        if (lines.length < 2) return null;
-        const timestamp = lines[0];
-        const text = lines.slice(1).join('\n').replace(/<[^>]*>/g, '').trim();
-        if (!text) return null;
-        return { text, timestamp };
-    }).filter((chunk): chunk is SubtitleChunk => chunk !== null);
-};
+import * as mammoth from 'mammoth';
 
 export class TextProcessor {
     private maxChars: number;
     private minCharsToMerge: number;
+
+    // Pre-compile regex for performance
+    private static readonly LINE_BREAKS_REGEX = /\r\n|\r/g;
+    private static readonly MULTI_NEWLINE_REGEX = /\n{2,}/g;
+    private static readonly CONTROL_CHARS_REGEX = /[\x00-\x08\x0b-\x1f\x7f]/g;
+    private static readonly MULTI_SPACE_REGEX = /[ \t]+/g;
+    private static readonly VIETNAMESE_ABBR_REGEX = /(TP|P|Q|H|T|S|P\.S|V\.V|V\.N|T\.P|Q\.L|N\.X\.B|T\.S|K\.S|B\.S|T\.H|T\.C|C\.T|C\.P|U\.B|H\.Đ|N\.D|N\.N|T\.Ư|T\.T|P\.T|P\.V|C\.A|Q\.Đ|H\.Q|T\.C|T\.D|T\.L|K\.T|X\.H|V\.H|G\.D|Y\.T|K\.H|C\.N|M\.T|D\.V|T\.M|B\.L|H\.S|K\.L|T\.N|P\.L|Q\.T|H\.Đ|N\.Q|C\.Q|T\.B|H\.B|P\.B|T\.C|V\.P|B\.T|T\.G|T\.K|T\.P|T\.X|H\.T|X\.T|C\.T|N\.T|P\.T|D\.T|K\.T|V\.T|S\.T|B\.T|L\.T|M\.T|N\.T|P\.T|Q\.T|R\.T|S\.T|T\.T|U\.T|V\.T|W\.T|X\.T|Y\.T|Z\.T)\./gi;
+    private static readonly SENTENCE_SPLIT_REGEX = /(?<=[.?!])\s+/;
 
     constructor(maxChars: number = 1500, minCharsToMerge: number = 30) {
         if (maxChars <= 0) {
@@ -40,24 +22,25 @@ export class TextProcessor {
     }
 
     private cleanText(text: string): string {
-        let cleaned = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-        cleaned = cleaned.replace(/\n{2,}/g, '\n');
-        cleaned = cleaned.replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '');
+        let cleaned = text.replace(TextProcessor.LINE_BREAKS_REGEX, '\n');
+        cleaned = cleaned.replace(TextProcessor.MULTI_NEWLINE_REGEX, '\n');
+        cleaned = cleaned.replace(TextProcessor.CONTROL_CHARS_REGEX, '');
         const lines = cleaned.split('\n');
-        const cleanedLines = lines.map(line => line.replace(/[ \t]+/g, ' ').trim());
+        const cleanedLines = lines.map(line => line.replace(TextProcessor.MULTI_SPACE_REGEX, ' ').trim());
         return cleanedLines.join('\n').trim();
     }
 
     private splitLongSentence(sentence: string): string[] {
         const subSentences: string[] = [];
         let currentPart = sentence;
-        const delimiters = [',', '!', '?', ':', ';', ' '];
+        const delimiters = ['. ', ', ', '! ', '? ', ': ', '; ', ' '];
+        
         while (currentPart.length > this.maxChars) {
             let cutPos = -1;
             for (const delim of delimiters) {
                 const foundPos = currentPart.lastIndexOf(delim, this.maxChars);
                 if (foundPos !== -1) {
-                    cutPos = foundPos + 1;
+                    cutPos = foundPos + delim.length;
                     break;
                 }
             }
@@ -75,19 +58,17 @@ export class TextProcessor {
 
     public process(text: string): string[] {
         const cleanedText = this.cleanText(text);
-        const paragraphs = cleanedText.split('\n').filter(p => p);
+        // Protect abbreviations from being split
+        const protectedText = cleanedText.replace(TextProcessor.VIETNAMESE_ABBR_REGEX, (match) => match.replace(/\./g, '___DOT___'));
         
+        const paragraphs = protectedText.split('\n').filter(p => p);
         const allSentences: string[] = [];
+
         for (const para of paragraphs) {
-            const sentencesInPara = para.split('.')
-                                      .map(s => s.trim())
-                                      .filter(s => s) 
-                                      .map(s => s + '.');
-            
-            if (!para.endsWith('.') && sentencesInPara.length > 0) {
-                const lastIndex = sentencesInPara.length - 1;
-                sentencesInPara[lastIndex] = sentencesInPara[lastIndex].slice(0, -1);
-            }
+            const sentencesInPara = para.split(TextProcessor.SENTENCE_SPLIT_REGEX)
+                                       .map(s => s.trim())
+                                       .filter(s => s)
+                                       .map(s => s.replace(/___DOT___/g, '.'));
             allSentences.push(...sentencesInPara);
         }
         
@@ -115,12 +96,6 @@ export class TextProcessor {
         if (currentChunk) {
             chunks.push(currentChunk);
         }
-        if (chunks.length === 0 && text.trim().length > 0) {
-             return [text]; 
-        }
-        if (chunks.length === 0) {
-            return [];
-        }
 
         if (chunks.length >= 2 && chunks[chunks.length - 1].length < this.minCharsToMerge) {
             const lastChunk = chunks.pop()!;
@@ -129,7 +104,7 @@ export class TextProcessor {
             if (secondToLastChunk.length + lastChunk.length + 1 <= this.maxChars) {
                 chunks[chunks.length - 1] += " " + lastChunk;
             } else {
-                const sentencesInChunk = secondToLastChunk.split(/(?<=[.?!])\s+/);
+                const sentencesInChunk = secondToLastChunk.split(TextProcessor.SENTENCE_SPLIT_REGEX);
                 if (sentencesInChunk.length > 1) {
                     const sentenceToMove = sentencesInChunk.pop()!;
                     const newLastChunk = `${sentenceToMove} ${lastChunk}`;
@@ -148,7 +123,7 @@ export class TextProcessor {
         return chunks.filter(c => c.length > 0);
     }
     
-    public static async processFromFile(file: File): Promise<string | SubtitleChunk[]> {
+    public static async processFromFile(file: File): Promise<string> {
         const extension = file.name.split('.').pop()?.toLowerCase();
         
         return new Promise((resolve, reject) => {
@@ -156,17 +131,7 @@ export class TextProcessor {
             
             reader.onerror = () => reject(new Error(`Đọc file .${extension} thất bại`));
 
-            if (extension === 'srt' || extension === 'vtt') {
-                reader.onload = (e) => {
-                    const text = e.target?.result as string;
-                    if (extension === 'srt') {
-                        resolve(parseSrtContent(text));
-                    } else {
-                        resolve(parseVttContent(text));
-                    }
-                };
-                reader.readAsText(file);
-            } else if (extension === 'txt') {
+            if (extension === 'txt') {
                  reader.onload = (e) => {
                     resolve(e.target?.result as string);
                 };
@@ -189,37 +154,5 @@ export class TextProcessor {
                 reject(new Error(`Định dạng tệp không được hỗ trợ: .${extension}`));
             }
         });
-    }
-
-    public static generateSrt(chunks: any[]): string {
-        const formatTime = (seconds: number): string => {
-            const date = new Date(0);
-            date.setSeconds(seconds);
-            const hh = date.getUTCHours().toString().padStart(2, '0');
-            const mm = date.getUTCMinutes().toString().padStart(2, '0');
-            const ss = date.getUTCSeconds().toString().padStart(2, '0');
-            const ms = Math.floor((seconds % 1) * 1000).toString().padStart(3, '0');
-            return `${hh}:${mm}:${ss},${ms}`;
-        };
-
-        let currentTime = 0;
-        return chunks
-            .filter(c => c.status === 'finished')
-            .map((chunk, index) => {
-                let timestamp = chunk.timestamp;
-                
-                // Nếu không có timestamp (văn bản thô), ước tính dựa trên độ dài
-                if (!timestamp) {
-                    // Ước tính 18 ký tự mỗi giây
-                    const estimatedDuration = (chunk.text.length / 18);
-                    const start = formatTime(currentTime);
-                    const end = formatTime(currentTime + estimatedDuration);
-                    timestamp = `${start} --> ${end}`;
-                    currentTime += estimatedDuration + 0.3; // Thêm 0.3s nghỉ giữa các đoạn
-                }
-
-                return `${index + 1}\n${timestamp}\n${chunk.text}\n`;
-            })
-            .join('\n');
     }
 }

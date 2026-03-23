@@ -45,49 +45,46 @@ export const Configuration: React.FC<ConfigurationProps> = memo(({
     const availableSpeakers = speakerGroups.find(g => g.country === selectedCountry)?.speakers || [];
 
     return (
-        <div className="glass-effect p-7 rounded-[2.5rem] shadow-2xl h-fit flex flex-col animate-rgb-border">
-            <div className="space-y-6">
-                <div className="border-b border-white/5 pb-5 mb-6">
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm h-fit flex flex-col overflow-hidden">
+            <div className="p-6 space-y-6">
+                <div className="border-b border-gray-100 pb-4">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-teal-500/10 rounded-xl border border-teal-500/20 shadow-[0_0_15px_rgba(20,184,166,0.1)]">
-                                <svg className="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                            <div className="p-2 bg-blue-50 rounded-lg border border-blue-100">
+                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
                             </div>
                             <div>
-                                <h2 className="text-xl font-black text-white uppercase tracking-tighter italic leading-none">Cấu hình Voice</h2>
-                                <div className="flex items-center gap-x-3 text-[9px] font-black mt-1.5 uppercase tracking-widest">
-                                    <span className="text-teal-500">Neural Generation Core</span>
-                                </div>
+                                <h2 className="text-lg font-bold text-gray-900">Cấu hình Tổng hợp</h2>
+                                <p className="text-xs text-gray-500 font-medium">Tùy chỉnh các tham số giọng nói neural</p>
                             </div>
                         </div>
-                        <span className="text-[8px] font-black bg-white/10 px-3 py-1 rounded-full text-white tracking-widest border border-white/10 uppercase">V1.3.5</span>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">Ngôn ngữ</label>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-gray-700 ml-1">Ngôn ngữ</label>
                         <select
                             value={selectedCountry}
                             onChange={(e) => onCountryChange(e.target.value)}
-                            className="w-full bg-black border border-white/10 rounded-2xl p-3.5 text-sm text-gray-200 focus:border-teal-500/50 outline-none transition-all shadow-inner appearance-none"
+                            className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                         >
                             {speakerGroups.map(group => (
-                                <option key={group.country} value={group.country} className="bg-black text-white">{group.country}</option>
+                                <option key={group.country} value={group.country}>{group.country}</option>
                             ))}
                         </select>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">Giọng đọc</label>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-gray-700 ml-1">Hồ sơ Giọng nói</label>
                         <select
                             value={speaker}
                             onChange={(e) => setSpeaker(e.target.value)}
-                            className="w-full bg-black border border-white/10 rounded-2xl p-3.5 text-sm text-gray-200 focus:border-teal-500/50 outline-none transition-all shadow-inner appearance-none"
+                            className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all disabled:opacity-50"
                             disabled={availableSpeakers.length === 0}
                         >
                             {availableSpeakers.map(spk => (
-                                <option key={spk.id} value={spk.id} className="bg-black text-white">{spk.name}</option>
+                                <option key={spk.id} value={spk.id}>{spk.name}</option>
                             ))}
                         </select>
                     </div>
@@ -96,69 +93,69 @@ export const Configuration: React.FC<ConfigurationProps> = memo(({
                 <div>
                     <button 
                         onClick={() => setShowAdvanced(!showAdvanced)} 
-                        className="w-full flex items-center justify-between p-4 rounded-2xl bg-black/20 border border-white/5 hover:border-white/10 transition-all group"
+                        className="w-full flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-all group"
                     >
-                        <span className="flex items-center gap-3 text-white group-hover:text-white/80 font-black uppercase tracking-widest text-[10px]">
-                            Tham số nâng cao
+                        <span className="flex items-center gap-2 text-gray-700 font-semibold text-xs">
+                            Tham số Nâng cao
                         </span>
-                        <svg className={`h-4 w-4 text-white/40 transition-transform duration-500 ${showAdvanced ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg className={`h-4 w-4 text-gray-400 transition-transform duration-300 ${showAdvanced ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     
                     {showAdvanced && (
-                        <div className="mt-4 grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <div className="space-y-2">
-                                <label className="text-[9px] font-black text-white uppercase tracking-widest ml-1">Luồng xử lý</label>
+                        <div className="mt-4 grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Luồng</label>
                                 <input 
                                     type="number" value={concurrentThreads} 
                                     onChange={e => setConcurrentThreads(Math.min(10, parseInt(e.target.value, 10)))}
-                                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-sm text-gray-200 outline-none focus:border-teal-500/40 shadow-inner"
+                                    className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm text-gray-900 outline-none focus:border-blue-500"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[9px] font-black text-white uppercase tracking-widest ml-1">Độ trễ (ms)</label>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Độ trễ (ms)</label>
                                 <input 
                                     type="number" value={requestDelay} 
                                     onChange={e => setRequestDelay(parseInt(e.target.value, 10))}
-                                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-sm text-gray-200 outline-none focus:border-teal-500/40 shadow-inner"
+                                    className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm text-gray-900 outline-none focus:border-blue-500"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[9px] font-black text-white uppercase tracking-widest ml-1">Ký tự tối đa/đoạn</label>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Ký tự tối đa</label>
                                 <input 
                                     type="number" value={maxChars} 
                                     onChange={e => setMaxChars(parseInt(e.target.value, 10))}
-                                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-sm text-gray-200 outline-none focus:border-teal-500/40 shadow-inner"
+                                    className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm text-gray-900 outline-none focus:border-blue-500"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[9px] font-black text-white uppercase tracking-widest ml-1">Ký tự tối thiểu gộp</label>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Gộp tối thiểu</label>
                                 <input 
                                     type="number" value={minCharsToMerge} 
                                     onChange={e => setMinCharsToMerge(parseInt(e.target.value, 10))}
-                                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-sm text-gray-200 outline-none focus:border-teal-500/40 shadow-inner"
+                                    className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm text-gray-900 outline-none focus:border-blue-500"
                                 />
                             </div>
                         </div>
                     )}
                 </div>
 
-                <div className="space-y-4 pt-4 border-t border-white/5">
-                    <div className="bg-black/60 border border-white/10 rounded-[2rem] overflow-hidden focus-within:border-teal-500/40 transition-all shadow-[inset_0_2px_15px_rgba(0,0,0,0.5)] relative group">
+                <div className="space-y-4 pt-4 border-t border-gray-100">
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden focus-within:border-blue-500/50 transition-all relative">
                         <textarea
                             value={textToAdd}
                             onChange={(e) => setTextToAdd(e.target.value)}
-                            placeholder="Dán nội dung văn bản..."
+                            placeholder="Nhập hoặc dán nội dung văn bản tại đây..."
                             rows={6}
-                            className="w-full border-0 resize-none p-6 text-sm bg-transparent text-gray-300 placeholder-white/10 focus:ring-0 leading-relaxed font-medium"
+                            className="w-full border-0 resize-none p-4 text-sm bg-transparent text-gray-900 placeholder-gray-400 focus:ring-0 leading-relaxed font-medium"
                         />
-                        <div className="flex items-center justify-between p-4 bg-white/[0.02] border-t border-white/5">
+                        <div className="flex items-center justify-between p-3 bg-white border-t border-gray-100">
                             <FileUpload onFileProcessed={handleFileAdded} />
                             <button
                                 onClick={handleAddTextJob}
                                 disabled={!textToAdd.trim()}
-                                className="flex items-center gap-2 py-2.5 px-8 rounded-2xl text-[10px] font-black uppercase tracking-widest text-black bg-white hover:bg-teal-400 transition-all shadow-xl disabled:opacity-5 active:scale-95"
+                                className="flex items-center gap-2 py-2 px-6 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all disabled:opacity-20 active:scale-95"
                             >
-                                Thêm Queue
+                                Thêm vào Hàng chờ
                             </button>
                         </div>
                     </div>
@@ -167,9 +164,9 @@ export const Configuration: React.FC<ConfigurationProps> = memo(({
                 <button
                     onClick={onProcessQueue}
                     disabled={isProcessing || pendingChunksCount === 0}
-                    className="neon-button w-full py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.4em] text-white shadow-2xl transition-all active:scale-[0.98] disabled:opacity-20"
+                    className="w-full py-4 rounded-xl text-sm font-bold uppercase tracking-widest text-white bg-gray-900 hover:bg-black transition-all active:scale-[0.98] disabled:opacity-10 shadow-lg shadow-gray-200"
                 >
-                    {isProcessing ? 'ENGINE RUNNING...' : `START SYNTHESIS (${pendingChunksCount})`}
+                    {isProcessing ? 'Đang xử lý...' : `Bắt đầu Tổng hợp (${pendingChunksCount})`}
                 </button>
             </div>
         </div>

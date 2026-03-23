@@ -4,65 +4,6 @@ import type { SpeakerGroup } from './types';
 export const WSS_URL = "wss://sami-normal-sg.capcutapi.com/internal/api/v1/ws";
 export const APP_KEY = "ddjeqjLGMn";
 
-export const SOUND_OF_TEXT_VOICES: SpeakerGroup[] = [
-    {
-        "country": "Tiếng Việt",
-        "speakers": [
-            { "id": "vi-VN", "name": "Tiếng Việt" }
-        ]
-    },
-    {
-        "country": "Tiếng Anh",
-        "speakers": [
-            { "id": "en-US", "name": "Tiếng Anh (US)" },
-            { "id": "en-GB", "name": "Tiếng Anh (UK)" },
-            { "id": "en-AU", "name": "Tiếng Anh (Australia)" }
-        ]
-    },
-    {
-        "country": "Tiếng Trung",
-        "speakers": [
-            { "id": "zh-CN", "name": "Tiếng Trung (Phổ thông)" },
-            { "id": "zh-TW", "name": "Tiếng Trung (Đài Loan)" }
-        ]
-    },
-    {
-        "country": "Tiếng Nhật",
-        "speakers": [
-            { "id": "ja-JP", "name": "Tiếng Nhật" }
-        ]
-    },
-    {
-        "country": "Tiếng Hàn",
-        "speakers": [
-            { "id": "ko-KR", "name": "Tiếng Hàn" }
-        ]
-    },
-    {
-        "country": "Tiếng Pháp",
-        "speakers": [
-            { "id": "fr-FR", "name": "Tiếng Pháp" }
-        ]
-    },
-    {
-        "country": "Tiếng Đức",
-        "speakers": [
-            { "id": "de-DE", "name": "Tiếng Đức" }
-        ]
-    },
-    {
-        "country": "Tiếng Tây Ban Nha",
-        "speakers": [
-            { "id": "es-ES", "name": "Tiếng Tây Ban Nha" }
-        ]
-    },
-    {
-        "country": "Tiếng Thái",
-        "speakers": [
-            { "id": "th-TH", "name": "Tiếng Thái" }
-        ]
-    }
-];
 export const SPEAKER_GROUPS: SpeakerGroup[] = [
     {
         "country": "Tiếng Việt",
@@ -1528,3 +1469,5 @@ export const SPEAKER_GROUPS: SpeakerGroup[] = [
         ]
     }
 ];
+
+

@@ -1,5 +1,5 @@
 {
-  "name": "PUCH GEN AI",
-  "description": "An all-in-one web client for generative AI tasks, featuring batch Text-to-Speech, AI image generation, high-quality video creation, and professional text filtering.",
+  "name": "Vocalis: Hệ thống Tổng hợp Âm thanh Chuyên nghiệp",
+  "description": "Bộ công cụ chuyển đổi văn bản thành giọng nói và xử lý văn bản hiệu suất cao cho quy trình làm việc chuyên nghiệp.",
   "requestFramePermissions": []
 }

@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import type { ChunkJob, ProcessingState } from '../types';
 import { APP_KEY, SPEAKER_GROUPS } from '../constants';
 import { TextProcessor } from '../services/textProcessor';
@@ -23,50 +23,43 @@ export const TextToSpeech: React.FC = () => {
     
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    const successfulChunksCount = React.useMemo(() => chunks.filter(c => c.status === 'finished').length, [chunks]);
-    const failedChunksCount = React.useMemo(() => chunks.filter(c => c.status === 'error').length, [chunks]);
+    const successfulChunksCount = useMemo(() => chunks.filter(c => c.status === 'finished').length, [chunks]);
+    const failedChunksCount = useMemo(() => chunks.filter(c => c.status === 'error').length, [chunks]);
     const totalChunksCount = chunks.length;
-    const remainingChunksCount = React.useMemo(() => chunks.filter(c => c.status === 'pending' || c.status === 'processing').length, [chunks]);
-    const pendingChunksCount = React.useMemo(() => chunks.filter(c => c.status === 'pending').length, [chunks]);
+    const remainingChunksCount = useMemo(() => chunks.filter(c => c.status === 'pending' || c.status === 'processing').length, [chunks]);
+    const pendingChunksCount = useMemo(() => chunks.filter(c => c.status === 'pending').length, [chunks]);
     
     useEffect(() => {
-        const mergeAudio = async () => {
-            try {
-                const finishedChunks = chunks.filter(c => c.status === 'finished' && c.audioUrl);
-                if (finishedChunks.length === 0) return;
-
-                const blobPromises = finishedChunks.map(chunk =>
-                    fetch(chunk.audioUrl!).then(res => res.blob())
-                );
-                const blobs = await Promise.all(blobPromises);
-                const mergedBlob = new Blob(blobs, { type: 'audio/mpeg' });
-                
-                setMergedAudioUrl(prev => {
-                    if (prev) URL.revokeObjectURL(prev);
-                    return URL.createObjectURL(mergedBlob);
-                });
-            } catch (error) {
-                console.error("Gộp file âm thanh thất bại:", error);
-            }
-        };
-
-        const areAllJobsDone = chunks.length > 0 && chunks.every(c => c.status === 'finished' || c.status === 'error');
+        const areAllJobsDone = totalChunksCount > 0 && chunks.every(c => c.status === 'finished' || c.status === 'error');
         const hasFinishedChunks = chunks.some(c => c.status === 'finished');
 
         if (processingState === 'idle' && areAllJobsDone && hasFinishedChunks && failedChunksCount === 0) {
+            const mergeAudio = async () => {
+                try {
+                    const finishedChunks = chunks.filter(c => c.status === 'finished' && c.audioUrl);
+                    if (finishedChunks.length === 0) return;
+
+                    const blobs = await Promise.all(
+                        finishedChunks.map(chunk => fetch(chunk.audioUrl!).then(res => res.blob()))
+                    );
+                    const mergedBlob = new Blob(blobs, { type: 'audio/mpeg' });
+                    
+                    setMergedAudioUrl(prev => {
+                        if (prev) URL.revokeObjectURL(prev);
+                        return URL.createObjectURL(mergedBlob);
+                    });
+                } catch (error) {
+                    console.error("Gộp file âm thanh thất bại:", error);
+                }
+            };
             mergeAudio();
-        } else if (mergedAudioUrl) {
-            URL.revokeObjectURL(mergedAudioUrl);
-            setMergedAudioUrl(null);
-        }
-        
-        return () => {
+        } else if (processingState === 'processing' || totalChunksCount === 0) {
             if (mergedAudioUrl) {
                 URL.revokeObjectURL(mergedAudioUrl);
+                setMergedAudioUrl(null);
             }
-        };
-    }, [chunks, processingState, failedChunksCount]);
-
+        }
+    }, [processingState, totalChunksCount, failedChunksCount]); // Removed chunks from deps to avoid re-running on every chunk update
 
     const addContent = useCallback((content: string | Array<{ text: string; timestamp: string }>) => {
         let newChunkJobs: ChunkJob[];
@@ -133,68 +126,60 @@ export const TextToSpeech: React.FC = () => {
         abortControllerRef.current = new AbortController();
         const signal = abortControllerRef.current.signal;
         
-        // Use a ref-like approach to get the latest chunks without re-creating the callback
-        setChunks(currentChunks => {
-            const chunksToProcess = currentChunks.filter(c => c.status === 'pending');
-            if (chunksToProcess.length === 0) {
-                setProcessingState('idle');
-                return currentChunks;
-            }
+        const chunksToProcess = chunks.filter(c => c.status === 'pending');
+        if (chunksToProcess.length === 0) {
+            setProcessingState('idle');
+            return;
+        }
 
-            const processSingleChunk = async (chunk: ChunkJob) => {
-                if (signal.aborted) return;
-                
-                updateChunk(chunk.id, { status: 'processing', error: null });
-                
-                try {
-                    const audioUrl = await synthesizeChunk({
-                        text: chunk.text,
-                        speaker,
-                        token,
-                        appkey: APP_KEY,
-                    });
-                    if (!signal.aborted) {
-                        updateChunk(chunk.id, { status: 'finished', audioUrl });
-                    }
-                } catch (err: any) {
-                    if (err.message?.includes('token') || err.message?.includes('401') || err.message?.includes('429')) {
-                        keyManager.markKeyAsBad(token);
-                    }
-
-                     if (!signal.aborted) {
-                        updateChunk(chunk.id, { status: 'error', error: (err as Error).message });
-                    }
-                }
-            };
+        const processSingleChunk = async (chunk: ChunkJob) => {
+            if (signal.aborted) return;
             
-            const queue = [...chunksToProcess];
+            updateChunk(chunk.id, { status: 'processing', error: null });
             
-            const runWorkers = async () => {
-                const workerPromises = Array(concurrentThreads).fill(null).map(async () => {
-                    while (queue.length > 0) {
-                        if (signal.aborted) break;
-                        const chunk = queue.shift();
-                        if (chunk) {
-                            await processSingleChunk(chunk);
-                            if (requestDelay > 0 && !signal.aborted) {
-                                await new Promise(resolve => setTimeout(resolve, requestDelay));
-                            }
-                        }
-                    }
+            try {
+                const audioUrl = await synthesizeChunk({
+                    text: chunk.text,
+                    speaker,
+                    token,
+                    appkey: APP_KEY,
                 });
-
-                await Promise.all(workerPromises);
-                
                 if (!signal.aborted) {
-                    setProcessingState('idle');
+                    updateChunk(chunk.id, { status: 'finished', audioUrl });
                 }
-            };
+            } catch (err: any) {
+                if (err.message?.includes('token') || err.message?.includes('401') || err.message?.includes('429')) {
+                    keyManager.markKeyAsBad(token);
+                }
 
-            runWorkers();
-            return currentChunks;
+                 if (!signal.aborted) {
+                    updateChunk(chunk.id, { status: 'error', error: (err as Error).message });
+                }
+            }
+        };
+        
+        const queue = [...chunksToProcess];
+        
+        const workerPromises = Array(concurrentThreads).fill(null).map(async () => {
+            while (queue.length > 0) {
+                if (signal.aborted) break;
+                const chunk = queue.shift();
+                if (chunk) {
+                    await processSingleChunk(chunk);
+                    if (requestDelay > 0 && !signal.aborted) {
+                        await new Promise(resolve => setTimeout(resolve, requestDelay));
+                    }
+                }
+            }
         });
 
-    }, [speaker, concurrentThreads, requestDelay, updateChunk]);
+        await Promise.all(workerPromises);
+        
+        if (!signal.aborted) {
+            setProcessingState('idle');
+        }
+
+    }, [chunks, speaker, concurrentThreads, requestDelay, updateChunk]);
 
     useEffect(() => {
         if (shouldProcess) {
@@ -207,15 +192,15 @@ export const TextToSpeech: React.FC = () => {
     }, [shouldProcess, processQueue]);
 
 
-    const handleCancel = () => {
+    const handleCancel = useCallback(() => {
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
             setChunks(prev => prev.map(c => c.status === 'processing' ? { ...c, status: 'pending' } : c));
             setProcessingState('idle');
         }
-    };
+    }, []);
 
-    const handleDownloadAll = () => {
+    const handleDownloadAll = useCallback(() => {
         if (!mergedAudioUrl) return;
         const a = document.createElement('a');
         a.href = mergedAudioUrl;
@@ -223,28 +208,15 @@ export const TextToSpeech: React.FC = () => {
         document.body.appendChild(a);
         a.click();
         a.remove();
-    };
-
-    const handleDownloadSrt = () => {
-        const srtContent = TextProcessor.generateSrt(chunks);
-        const blob = new Blob([srtContent], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'subtitle.srt';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-    };
+    }, [mergedAudioUrl]);
     
-    const handleCountryChange = (newCountry: string) => {
+    const handleCountryChange = useCallback((newCountry: string) => {
         setSelectedCountry(newCountry);
         const newSpeakerGroup = SPEAKER_GROUPS.find(g => g.country === newCountry);
         if (newSpeakerGroup && newSpeakerGroup.speakers.length > 0) {
             setSpeaker(newSpeakerGroup.speakers[0].id);
         }
-    };
+    }, []);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
